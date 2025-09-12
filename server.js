@@ -24,11 +24,11 @@ app.get('/dashboard', (req, res) => res.sendFile('dashboard-simple.html', { root
 app.use('/', hanetRoutes);
 
 // Khởi động server
-app.listen(PORT, async () => {
+app.listen(PORT, '0.0.0.0', async () => {
     try {
         await poolPromise;
         console.log(`🚀 Server đang lắng nghe tại http://localhost:${PORT}`);
-        console.log(`🌐 Dashboard UI: http://buonkuopcheckin:${PORT}/dashboard`);
+        console.log(`🌐 Dashboard UI: http://192.168.11.114:${PORT}/dashboard`);
         console.log(`📩 Đang chờ dữ liệu Hanet tại http://localhost:${PORT}/hanet-webhook`);
     } catch (error) {
         console.error('❌ Server không thể kết nối tới cơ sở dữ liệu:', error);
