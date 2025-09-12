@@ -2,6 +2,29 @@
 
 Hệ thống quản lý chấm công Hanet với hỗ trợ tiếng Việt và tính năng báo cáo đầy đủ.
 
+## 📁 Cấu trúc thư mục
+
+```
+HanetCursorV112092025/
+├── SQL Server 2012/           # Tất cả file SQL và database
+│   ├── database_structure.sql # Cấu trúc database hoàn chỉnh
+│   ├── sample_data.sql        # Dữ liệu mẫu
+│   ├── sp_XuLyChamCongMoi.sql # Stored procedure chính
+│   ├── create_calamviec_table.sql # Tạo bảng ca làm việc
+│   └── manage_employee_shifts.sql # Quản lý ca làm việc
+├── public/                    # Frontend files
+│   ├── dashboard.html         # Main dashboard
+│   ├── css/dashboard.css      # Styling
+│   └── js/                    # JavaScript modules
+├── modules/                   # Backend modules
+│   └── routes.js              # API routes và webhook
+├── server.js                  # Main server file
+├── db.js                      # Database connection
+├── helpers.js                 # Utility functions
+├── package.json               # Dependencies
+└── README.md                  # Documentation
+```
+
 ## 🚀 Tính năng chính
 
 - **Webhook Hanet**: Tự động nhận và xử lý dữ liệu chấm công từ thiết bị Hanet
@@ -32,9 +55,9 @@ npm install
 
 ### 3. Cấu hình database
 - Tạo database `hanet` trong SQL Server
-- Chạy file `database_structure.sql` để tạo cấu trúc bảng
-- Chạy file `sample_data.sql` để thêm dữ liệu mẫu
-- Chạy file `sp_XuLyChamCongMoi.sql` để tạo stored procedure
+- Chạy file `SQL Server 2012/database_structure.sql` để tạo cấu trúc bảng
+- Chạy file `SQL Server 2012/sample_data.sql` để thêm dữ liệu mẫu
+- Chạy file `SQL Server 2012/sp_XuLyChamCongMoi.sql` để tạo stored procedure
 
 ### 4. Cấu hình environment
 Tạo file `.env` với nội dung:
