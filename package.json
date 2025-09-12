@@ -1,11 +1,13 @@
 {
-  "name": "hanet-gemini-v3-server",
-  "version": "1.0.0",
-  "description": "Server for Hanet Gemini V3 project",
+  "name": "hanet-attendance-management",
+  "version": "2.0.0",
+  "description": "Optimized Hanet Attendance Management System with Vietnamese support",
   "main": "server.js",
   "type": "module",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
@@ -15,5 +17,18 @@
     "express": "^4.19.2",
     "moment-timezone": "^0.5.45",
     "mssql": "^10.0.2"
-  }
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "hanet",
+    "attendance",
+    "management",
+    "vietnamese",
+    "sql-server",
+    "express"
+  ],
+  "author": "Dat Pham",
+  "license": "MIT"
 }

@@ -82,6 +82,7 @@ BEGIN
             FROM dulieutho raw
             WHERE raw.person_id = @person_id
                 AND CAST(raw.ts_vn AS DATE) = @NgayChamCong
+                AND raw.event_type = 'vào'  -- CHỈ LẤY EVENT VÀO
             ORDER BY raw.ts_vn ASC; -- ASC để lấy giờ cũ nhất - KHÔNG BAO GIỜ THAY ĐỔI
         END
         
@@ -97,6 +98,7 @@ BEGIN
             FROM dulieutho raw
             WHERE raw.person_id = @person_id
                 AND (CAST(raw.ts_vn AS DATE) = @NgayChamCong OR CAST(raw.ts_vn AS DATE) = DATEADD(DAY, 1, @NgayChamCong))
+                AND raw.event_type = 'ra'  -- CHỈ LẤY EVENT RA
                 AND (@GioVao IS NULL OR raw.ts_vn > @GioVao) -- Đảm bảo checkout phải sau giờ vào
             ORDER BY raw.ts_vn DESC; -- DESC để lấy giờ mới nhất - LUÔN CẬP NHẬT
         END
@@ -109,7 +111,7 @@ BEGIN
         END
         
         -- TU DONG XAC DINH CA LAM VIEC DUA TREN THOI GIAN
-        DECLARE @CaThucTe NVARCHAR(10) = N'VH'; -- Mac dinh la ca van hanh
+        DECLARE @CaThucTe NVARCHAR(10) = @CaLamViec; -- Su dung ca lam viec tu bang NhanVien
         DECLARE @TrangThai NVARCHAR(50) = N'Chua co quy dinh';
         DECLARE @HopLe BIT = 0; -- Flag để kiểm tra tính hợp lệ
         
@@ -136,12 +138,17 @@ BEGIN
                 END
                 ELSE IF @GioCheckin BETWEEN '06:00:00' AND '07:00:00' AND @GioCheckout BETWEEN '19:00:00' AND '20:00:00'
                 BEGIN
-                    SET @CaThucTe = N'VHCN' -- Ca van hanh ngay
+                    -- Neu nhan vien la ca van hanh, xac dinh ca ngay hay ca dem
+                    IF @CaLamViec = 'VH'
+                        SET @CaThucTe = N'VHCN' -- Ca van hanh ngay
+                    ELSE
+                        SET @CaThucTe = @CaLamViec
                     SET @HopLe = 1
                 END
-                ELSE
+                ELSE IF @CaLamViec = 'VH'
                 BEGIN
-                    SET @CaThucTe = N'VH'   -- Ca van hanh chung (linh hoat)
+                    -- Nhan vien van hanh co the lam ca ngay hoac ca dem
+                    SET @CaThucTe = N'VH'   -- Ca van hanh linh hoat
                     SET @HopLe = 1
                 END
             END
@@ -150,7 +157,17 @@ BEGIN
             BEGIN
                 IF @GioCheckin BETWEEN '18:00:00' AND '19:00:00' AND @GioCheckout BETWEEN '07:00:00' AND '08:00:00'
                 BEGIN
-                    SET @CaThucTe = N'VHCD' -- Ca van hanh dem
+                    -- Neu nhan vien la ca van hanh, xac dinh ca ngay hay ca dem
+                    IF @CaLamViec = 'VH'
+                        SET @CaThucTe = N'VHCD' -- Ca van hanh dem
+                    ELSE
+                        SET @CaThucTe = @CaLamViec
+                    SET @HopLe = 1
+                END
+                ELSE IF @CaLamViec = 'VH'
+                BEGIN
+                    -- Nhan vien van hanh co the lam ca ngay hoac ca dem
+                    SET @CaThucTe = N'VH'   -- Ca van hanh linh hoat
                     SET @HopLe = 1
                 END
                 ELSE
