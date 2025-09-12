@@ -19,7 +19,8 @@ app.use(express.raw({ type: '*/*', limit: '2mb' }));
 app.use(express.static('public'));
 
 // Routes
-app.get('/', (req, res) => res.redirect('/dashboard.html'));
+app.get('/', (req, res) => res.redirect('/dashboard'));
+app.get('/dashboard', (req, res) => res.sendFile('dashboard-simple.html', { root: 'public' }));
 app.use('/', hanetRoutes);
 
 // Khởi động server
@@ -27,6 +28,7 @@ app.listen(PORT, async () => {
     try {
         await poolPromise;
         console.log(`🚀 Server đang lắng nghe tại http://localhost:${PORT}`);
+        console.log(`🌐 Dashboard UI: http://buonkuopcheckin:${PORT}/dashboard`);
         console.log(`📩 Đang chờ dữ liệu Hanet tại http://localhost:${PORT}/hanet-webhook`);
     } catch (error) {
         console.error('❌ Server không thể kết nối tới cơ sở dữ liệu:', error);

@@ -195,7 +195,7 @@ node server.js
 
 ## 📱 Giao diện
 
-Truy cập `http://localhost:1888` để sử dụng dashboard với các tab:
+Truy cập `http://buonkuopcheckin:1888/dashboard` để sử dụng dashboard với các tab:
 
 ### **🏠 Dashboard**
 - Tổng quan KPI và thống kê
