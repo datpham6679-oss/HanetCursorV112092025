@@ -1,6 +1,26 @@
-# Hanet Attendance Management System
+# Hanet Attendance Management System v1.1
 
-Hệ thống quản lý chấm công Hanet với hỗ trợ tiếng Việt và tính năng báo cáo đầy đủ.
+Hệ thống quản lý chấm công Hanet với tính năng tự động tính toán và hỗ trợ tiếng Việt đầy đủ.
+
+## 🚀 Tính năng mới v1.1
+
+### ✅ **Hệ thống tự động tính toán**
+- **Real-time processing**: Xử lý chấm công tự động khi có event mới
+- **Auto-update**: Cập nhật giờ ra tự động với checkout mới nhất
+- **Smart calculation**: Tính toán thời gian làm việc chính xác
+- **Webhook integration**: Tích hợp webhook Hanet tự động
+
+### ✅ **Quản lý nhân viên CRUD**
+- **Thêm nhân viên**: Form đầy đủ với validation
+- **Chỉnh sửa**: Cập nhật thông tin nhân viên
+- **Xóa nhân viên**: Với kiểm tra ràng buộc dữ liệu
+- **Tìm kiếm**: Autocomplete search cho tên nhân viên
+
+### ✅ **Giao diện tối ưu**
+- **Dashboard đơn giản**: Giao diện thống nhất trong 1 file
+- **Thông báo**: Hệ thống notification cho user feedback
+- **Calendar widget**: Chọn ngày trực quan
+- **Responsive design**: Tương thích mọi thiết bị
 
 ## 📁 Cấu trúc thư mục
 
@@ -9,22 +29,11 @@ HanetCursorV112092025/
 ├── SQL Server 2012/           # Tất cả file SQL và database
 │   ├── database_structure.sql # Cấu trúc database hoàn chỉnh
 │   ├── sample_data.sql        # Dữ liệu mẫu
-│   ├── sp_XuLyChamCongMoi.sql # Stored procedure chính
-│   ├── create_calamviec_table.sql # Tạo bảng ca làm việc
-│   ├── manage_employee_shifts.sql # Quản lý ca làm việc
+│   ├── sp_XuLyChamCongMoi.sql # Stored procedure gốc
+│   ├── sp_XuLyChamCongMoi_Auto.sql # Stored procedure tự động (MỚI)
 │   └── README.md              # Hướng dẫn SQL
 ├── public/                    # Frontend files
-│   ├── dashboard.html         # Main dashboard
-│   ├── css/                   # Styling files
-│   │   ├── dashboard.css      # Main dashboard styles
-│   │   └── modules.css        # Module-specific styles
-│   └── js/                    # JavaScript modules (modularized)
-│       ├── utils.js           # Utility functions
-│       ├── data.js            # API calls và data fetching
-│       ├── dashboard.js       # Dashboard functionality
-│       ├── reports.js         # Reports functionality
-│       ├── main.js            # Main application entry point
-│       └── backup/            # Old files backup
+│   └── dashboard-simple.html # Dashboard tối ưu (MỚI)
 ├── modules/                   # Backend modules
 │   └── routes.js              # API routes và webhook
 ├── server.js                  # Main server file
@@ -34,63 +43,47 @@ HanetCursorV112092025/
 └── README.md                  # Documentation
 ```
 
-## 🏗️ Cấu trúc Code (Modularized)
+## 🏗️ Kiến trúc hệ thống
 
-### Frontend Architecture
-Dự án đã được refactor thành cấu trúc modular để dễ quản lý và bảo trì:
-
-#### **JavaScript Modules:**
-- **`utils.js`** (3.6KB): Utility functions chung (date formatting, notifications, loading states)
-- **`data.js`** (9.9KB): API calls và data fetching (attendance, departments, devices)
-- **`dashboard.js`** (6.8KB): Dashboard functionality (KPI updates, charts, tables)
-- **`reports.js`** (11.9KB): Reports functionality (summary, name, ID, department, month reports)
-- **`main.js`** (2.2KB): Main application entry point và initialization
-
-#### **CSS Modules:**
-- **`dashboard.css`**: Main dashboard styles
-- **`modules.css`**: Module-specific styles (notifications, devices, activity, reports)
-
-#### **Lợi ích của cấu trúc mới:**
-- ✅ **Tách biệt trách nhiệm**: Mỗi module có một chức năng cụ thể
-- ✅ **Dễ bảo trì**: Code được tổ chức rõ ràng, dễ tìm và sửa lỗi
-- ✅ **Tái sử dụng**: Các function có thể được sử dụng ở nhiều nơi
-- ✅ **Hiệu suất**: Load chỉ những module cần thiết
-- ✅ **Mở rộng**: Dễ dàng thêm tính năng mới mà không ảnh hưởng code cũ
-
-### Backend Architecture
+### **Backend Architecture**
 - **`server.js`**: Main server entry point
 - **`db.js`**: Database connection và configuration
 - **`helpers.js`**: Utility functions cho backend
-- **`modules/routes.js`**: API routes và webhook handlers
+- **`modules/routes.js`**: API routes và webhook handlers với tự động tính toán
+
+### **Database Architecture**
+- **`sp_XuLyChamCongMoi_Auto`**: Stored procedure tự động xử lý chấm công
+- **Real-time processing**: Xử lý dữ liệu ngay khi có event mới
+- **Smart merge**: Cập nhật hoặc tạo mới bản ghi chấm công
+
+### **Frontend Architecture**
+- **Single file design**: `dashboard-simple.html` chứa tất cả
+- **Modular JavaScript**: Code được tổ chức theo chức năng
+- **Notification system**: Thông báo real-time cho user
 
 ## 📈 Changelog
 
-### Version 2.0 (Latest) - Code Refactoring
+### Version 1.1 - Automatic Attendance Calculation (Latest)
 **Ngày:** 12/09/2025
 
-#### **🔄 Major Refactoring:**
-- **Tách nhỏ file `main.js`**: Từ 198KB (5,397 dòng) xuống 2.2KB (60 dòng)
-- **Modular Architecture**: Chia thành 5 modules chuyên biệt
-- **Loại bỏ code duplicate**: Xóa 6 lần lặp lại section "REPORTS FUNCTIONS"
-- **Tối ưu cấu trúc**: Tổ chức lại code theo chức năng
+#### **🔄 Major Features:**
+- **Automatic Processing**: Hệ thống tự động tính toán chấm công
+- **Real-time Updates**: Cập nhật giờ ra tự động với checkout mới
+- **Employee Management**: CRUD operations cho nhân viên
+- **Simplified Frontend**: Giao diện đơn giản hóa
 
-#### **📁 New File Structure:**
-```
-public/js/
-├── utils.js (3.6KB)     # Utility functions
-├── data.js (9.9KB)      # API calls
-├── dashboard.js (6.8KB) # Dashboard logic
-├── reports.js (11.9KB)  # Reports logic
-├── main.js (2.2KB)      # Main entry point
-└── backup/              # Old files backup
-```
+#### **🆕 New Components:**
+- **`sp_XuLyChamCongMoi_Auto`**: Stored procedure tự động
+- **`dashboard-simple.html`**: Frontend tối ưu
+- **Employee CRUD**: Quản lý nhân viên đầy đủ
+- **Notification System**: Thông báo user feedback
 
 #### **✨ Improvements:**
-- ✅ **Performance**: Giảm 99% kích thước file chính
-- ✅ **Maintainability**: Code dễ đọc và bảo trì hơn
-- ✅ **Scalability**: Dễ dàng thêm tính năng mới
-- ✅ **Debugging**: Dễ tìm và sửa lỗi
-- ✅ **Team Development**: Nhiều người có thể làm việc song song
+- ✅ **Auto-calculation**: Tự động tính toán khi có event mới
+- ✅ **Real-time**: Cập nhật ngay lập tức
+- ✅ **User-friendly**: Giao diện đơn giản, dễ sử dụng
+- ✅ **Performance**: Tối ưu database queries
+- ✅ **Reliability**: Xử lý lỗi và validation tốt hơn
 
 ### Version 1.0 - Initial Release
 **Ngày:** 11/09/2025
@@ -104,11 +97,27 @@ public/js/
 
 ## 🚀 Tính năng chính
 
+### **🔄 Tự động tính toán**
 - **Webhook Hanet**: Tự động nhận và xử lý dữ liệu chấm công từ thiết bị Hanet
+- **Real-time processing**: Xử lý ngay khi có event checkout mới
+- **Smart calculation**: Tính toán thời gian làm việc chính xác
+- **Auto-update**: Cập nhật giờ ra tự động với checkout mới nhất
+
+### **👥 Quản lý nhân viên**
+- **CRUD Operations**: Thêm, sửa, xóa nhân viên
+- **Validation**: Kiểm tra dữ liệu đầu vào
+- **Search**: Tìm kiếm nhân viên với autocomplete
+- **Notifications**: Thông báo kết quả operations
+
+### **📊 Dashboard & Reports**
 - **Dashboard**: Giao diện quản lý trực quan với các tab chức năng
-- **Báo cáo**: Xuất báo cáo Excel với nhiều định dạng (tổng hợp, theo tên, theo mã nhân viên, theo phòng ban, theo tháng)
-- **Quản lý thiết bị**: Monitor trạng thái online/offline của các thiết bị
-- **Ca làm việc**: Hệ thống ca linh hoạt (Hành chính, Sửa chữa, Vận hành ca ngày, Vận hành ca đêm)
+- **Báo cáo**: Xuất báo cáo Excel với nhiều định dạng
+- **Chi tiết nhân viên**: Xem timeline chấm công của từng nhân viên
+- **Calendar**: Chọn ngày trực quan
+
+### **🏢 Quản lý hệ thống**
+- **Thiết bị**: Monitor trạng thái online/offline của các thiết bị
+- **Ca làm việc**: Hệ thống ca linh hoạt (HC, SC, VH)
 - **Hỗ trợ tiếng Việt**: Font encoding và diacritics đầy đủ
 
 ## 📋 Yêu cầu hệ thống
@@ -134,7 +143,7 @@ npm install
 - Tạo database `hanet` trong SQL Server
 - Chạy file `SQL Server 2012/database_structure.sql` để tạo cấu trúc bảng
 - Chạy file `SQL Server 2012/sample_data.sql` để thêm dữ liệu mẫu
-- Chạy file `SQL Server 2012/sp_XuLyChamCongMoi.sql` để tạo stored procedure
+- Chạy file `SQL Server 2012/sp_XuLyChamCongMoi_Auto.sql` để tạo stored procedure tự động
 
 ### 4. Cấu hình environment
 Tạo file `.env` với nội dung:
@@ -160,67 +169,117 @@ node server.js
 - **ChamCongDaXuLyMoi**: Dữ liệu chấm công đã xử lý
 
 ### Stored Procedures:
-- **sp_XuLyChamCongMoi**: Xử lý dữ liệu chấm công tự động
+- **sp_XuLyChamCongMoi**: Xử lý dữ liệu chấm công gốc
+- **sp_XuLyChamCongMoi_Auto**: Xử lý tự động với real-time updates
 
 ## 🔧 API Endpoints
 
-- `POST /hanet-webhook`: Nhận dữ liệu từ Hanet
+### **Webhook & Processing**
+- `POST /hanet-webhook`: Nhận dữ liệu từ Hanet và tự động xử lý
+
+### **Data Retrieval**
 - `GET /attendance-data`: Lấy dữ liệu chấm công
 - `GET /devices`: Lấy danh sách thiết bị
-- `GET /export/report`: Xuất báo cáo Excel
+- `GET /raw-events`: Lấy dữ liệu thô cho chi tiết nhân viên
+
+### **Employee Management**
+- `GET /employees`: Lấy danh sách nhân viên
+- `GET /employees/:id`: Lấy thông tin nhân viên cụ thể
 - `POST /add-employee`: Thêm nhân viên mới
+- `PUT /employees/:id`: Cập nhật thông tin nhân viên
+- `DELETE /employees/:id`: Xóa nhân viên
+
+### **Reports & Export**
+- `GET /export/report`: Xuất báo cáo Excel
+- `GET /departments`: Lấy danh sách phòng ban
 
 ## 📱 Giao diện
 
 Truy cập `http://localhost:1888` để sử dụng dashboard với các tab:
-- **Dashboard**: Tổng quan và thống kê
-- **Hoạt động**: Danh sách chấm công
-- **Thiết bị**: Quản lý thiết bị
-- **Báo cáo**: Xuất báo cáo Excel
+
+### **🏠 Dashboard**
+- Tổng quan KPI và thống kê
+- Charts và biểu đồ trực quan
+- Refresh button để cập nhật dữ liệu
+
+### **📋 Hoạt động**
+- Danh sách chấm công với filter
+- Tìm kiếm theo tên nhân viên
+- Pagination và sorting
+
+### **📊 Báo cáo**
+- Xuất báo cáo Excel đa định dạng
+- Filter theo ngày, phòng ban, nhân viên
+- Calendar widget để chọn ngày
+
+### **👤 Chi tiết NV**
+- Xem timeline chấm công của nhân viên
+- Summary cards với thống kê
+- Tìm kiếm nhân viên với autocomplete
+
+### **👥 Quản lý NV**
+- CRUD operations cho nhân viên
+- Form validation và notifications
+- Table với actions (edit/delete)
+
+### **📱 Thiết bị**
+- Monitor trạng thái online/offline
+- Filter theo trạng thái
+- Refresh để cập nhật
 
 ## 🔄 Ca làm việc
 
-Hệ thống hỗ trợ 4 loại ca:
-- **HC (Hành chính)**: Thứ 2-6, 6h-18h
-- **SC (Sửa chữa)**: Thứ 2-6, 6h-18h  
-- **VHCN (Vận hành ca ngày)**: Thứ 2-CN, 6h-20h
-- **VHCD (Vận hành ca đêm)**: Thứ 2-CN, 18h-8h (ngày hôm sau)
+Hệ thống hỗ trợ 3 loại ca chính:
+
+### **HC (Hành chính)**
+- **Thời gian**: Thứ 2-6, 6h-18h
+- **Check-in**: 6h-7h30
+- **Check-out**: 17h-18h
+
+### **SC (Sửa chữa)**
+- **Thời gian**: Thứ 2-6, 6h-18h
+- **Check-in**: 6h-8h
+- **Check-out**: 16h-18h
+
+### **VH (Vận hành)**
+- **VHCN (Ca ngày)**: Thứ 2-CN, 6h-20h
+- **VHCD (Ca đêm)**: Thứ 2-CN, 18h-8h (ngày hôm sau)
+- **Tự động phát hiện**: Dựa trên giờ check-in thực tế
 
 ## 📈 Báo cáo
 
 Hệ thống hỗ trợ xuất báo cáo Excel với các định dạng:
-- Tổng hợp chung
-- Theo tên nhân viên
-- Theo mã nhân viên nội bộ
-- Theo phòng ban
-- Theo tháng
+- **Tổng hợp**: Tất cả dữ liệu
+- **Theo tên**: Filter theo tên nhân viên
+- **Theo mã NV**: Filter theo mã nhân viên nội bộ
+- **Theo phòng ban**: Filter theo phòng ban
+- **Theo tháng**: Filter theo tháng cụ thể
 
 ## 🚨 Xử lý sự cố
 
-### Lỗi kết nối database:
+### **Lỗi kết nối database:**
 - Kiểm tra SQL Server đang chạy
 - Kiểm tra thông tin đăng nhập trong `.env`
 - Kiểm tra database `hanet` đã được tạo
 
-### Lỗi webhook:
+### **Lỗi webhook:**
 - Kiểm tra URL webhook: `http://your-server:1888/hanet-webhook`
 - Kiểm tra format JSON từ Hanet
 - Kiểm tra logs trong console
 
-### Lỗi font tiếng Việt:
+### **Lỗi tự động tính toán:**
+- Kiểm tra stored procedure `sp_XuLyChamCongMoi_Auto` đã được tạo
+- Kiểm tra webhook có gọi stored procedure
+- Kiểm tra dữ liệu trong bảng `dulieutho`
+
+### **Lỗi font tiếng Việt:**
 - Đảm bảo collation database là `Vietnamese_CI_AS`
 - Kiểm tra encoding trong SQL Server
 
-## 📝 Changelog
+## 🏷️ Tags & Releases
 
-### Version 1.0.0 (2025-09-13)
-- ✅ Hệ thống webhook Hanet hoàn chỉnh
-- ✅ Dashboard với 4 tab chức năng
-- ✅ Hỗ trợ 4 loại ca làm việc
-- ✅ Xuất báo cáo Excel đa định dạng
-- ✅ Quản lý thiết bị online/offline
-- ✅ Hỗ trợ tiếng Việt đầy đủ
-- ✅ Stored procedure xử lý tự động
+- **v1.0-phase1**: Phiên bản đầu tiên với tính năng cơ bản
+- **v1.1-auto-attendance**: Phiên bản tự động tính toán (Latest)
 
 ## 👥 Đóng góp
 
@@ -237,4 +296,4 @@ Dự án này được phát hành dưới giấy phép MIT.
 
 ---
 
-**Lưu ý**: Đây là hệ thống quản lý chấm công chuyên nghiệp với khả năng xử lý dữ liệu thời gian thực từ thiết bị Hanet.
+**Lưu ý**: Đây là hệ thống quản lý chấm công chuyên nghiệp với khả năng xử lý dữ liệu thời gian thực và tự động tính toán từ thiết bị Hanet.
