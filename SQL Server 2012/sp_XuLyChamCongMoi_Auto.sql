@@ -11,7 +11,7 @@ BEGIN
     SET NOCOUNT ON;
     
     -- Buoc 1: Lay cac su kien cho tat ca nhan vien (bao gom ca DaXuLy=1)
-    -- Chỉ lấy những ngày có event mới nhất trong 7 ngày gần đây
+    -- Chỉ lấy những ngày có event mới nhất trong 3 ngày gần đây để tối ưu tốc độ
     SELECT DISTINCT
         raw.person_id,
         CAST(raw.ts_vn AS DATE) AS NgayChamCong,
@@ -19,11 +19,11 @@ BEGIN
         nv.MaNhanVienNoiBo,
         nv.HoTen
     INTO #TempAllEvents
-    FROM dulieutho AS raw
-    JOIN NhanVien AS nv ON raw.person_id = nv.MaNhanVienHANET
+    FROM dulieutho AS raw WITH (NOLOCK)
+    JOIN NhanVien AS nv WITH (NOLOCK) ON raw.person_id = nv.MaNhanVienHANET
     WHERE raw.person_id IS NOT NULL 
         AND nv.MaNhanVienHANET IS NOT NULL
-        AND CAST(raw.ts_vn AS DATE) >= DATEADD(DAY, -7, GETDATE()) -- Chỉ xử lý 7 ngày gần đây
+        AND CAST(raw.ts_vn AS DATE) >= DATEADD(DAY, -3, GETDATE()) -- Giảm xuống 3 ngày để tối ưu
     GROUP BY raw.person_id, CAST(raw.ts_vn AS DATE), nv.CaLamViec, nv.MaNhanVienNoiBo, nv.HoTen;
     
     -- Khai bao cursor

@@ -33,6 +33,9 @@ const logAttendanceEvent = (type, hmsVN, empName, deviceName, deviceId, dmyVN) =
 };
 
 router.post('/hanet-webhook', async (req, res) => {
+    // Set timeout cho request này
+    req.setTimeout(30000); // 30 giây
+    
     try {
         const p = parsePayload(req);
 
@@ -75,7 +78,9 @@ router.post('/hanet-webhook', async (req, res) => {
         request.input('ts_vn', sql.DateTime, tsVNValue);
         request.input('payload_json', sql.NVarChar(sql.MAX), JSON.stringify(p));
 
-        // Thực hiện MERGE và stored procedures
+        // Thực hiện MERGE và stored procedures với timeout
+        console.log('🔄 Bắt đầu xử lý webhook...');
+        
         await request.query(`
             MERGE dbo.dulieutho AS tgt
             USING (SELECT
@@ -106,7 +111,19 @@ router.post('/hanet-webhook', async (req, res) => {
                 VALUES (src.event_id, src.employee_code, src.person_id, src.employee_name, src.device_id, src.device_name, src.event_type, src.ts_vn, src.payload_json, src.DaXuLy);
         `);
 
-        await request.query(`EXEC sp_XuLyChamCongMoi_Auto`);
+        console.log('✅ MERGE thành công, đang chạy stored procedure...');
+        
+        // Chạy stored procedure với timeout riêng
+        const spRequest = pool.request();
+        spRequest.timeout = 20000; // 20 giây timeout cho SP
+        
+        try {
+            await spRequest.query(`EXEC sp_XuLyChamCongMoi_Auto`);
+            console.log('✅ Stored procedure hoàn thành');
+        } catch (spError) {
+            console.error('⚠️ Lỗi stored procedure (không ảnh hưởng webhook):', spError.message);
+            // Không throw error để webhook vẫn trả về thành công
+        }
         
         logAttendanceEvent(type, hmsVN, empName, deviceName, deviceId, dmyVN);
         return res.status(200).json({ ok: true });
