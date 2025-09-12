@@ -292,9 +292,67 @@ router.get('/attendance-data', async (req, res) => {
     }
 });
 
+// Hanet API configuration
+const HANET_API_URL = 'https://partner.hanet.ai/device/getListDevice';
+const HANET_TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjI2NzI3NTU5NzExNTA2MTA0MzIiLCJlbWFpbCI6ImRhdHBxLnNwYmtAZ21haWwuY29tIiwiY2xpZW50X2lkIjoiODk2ZTIzMmU1YTk2MmMzN2MzY2IxYzdlMGFiZGE5MDYiLCJ0eXBlIjoicmVmcmVzaF90b2tlbiIsImlhdCI6MTc1NzY2OTYzNSwiZXhwIjoxNzg5MjA1NjM1fQ.gKiabfKbLpCzrtzkXAUHQ6rNZb6fpcV0J_BxLNX64WI';
+
+// Cache for Hanet API data
+let hanetCache = {
+    data: null,
+    timestamp: 0,
+    ttl: 30000 // 30 seconds cache
+};
+
+// Function to get device status from Hanet API
+async function getHanetDeviceStatus() {
+    try {
+        // Check cache first
+        const now = Date.now();
+        if (hanetCache.data && (now - hanetCache.timestamp) < hanetCache.ttl) {
+            console.log('📡 Using cached Hanet data');
+            return hanetCache.data;
+        }
+        
+        console.log('📡 Fetching device status from Hanet API...');
+        const response = await fetch(`${HANET_API_URL}?pageSize=100`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${HANET_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+        
+        if (!response.ok) {
+            console.error(`Hanet API HTTP error: ${response.status} ${response.statusText}`);
+            return hanetCache.data; // Return cached data if available
+        }
+        
+        const data = await response.json();
+        console.log('📱 Hanet API response:', data);
+        
+        // Check for API errors
+        if (data.returnCode && data.returnCode !== 0) {
+            console.error(`Hanet API error: ${data.returnCode} - ${data.returnMessage}`);
+            return hanetCache.data; // Return cached data if available
+        }
+        
+        // Update cache
+        hanetCache.data = data;
+        hanetCache.timestamp = now;
+        
+        return data;
+    } catch (error) {
+        console.error('❌ Error fetching from Hanet API:', error);
+        return hanetCache.data; // Return cached data if available
+    }
+}
+
 // Lấy danh sách thiết bị từ dữ liệu webhook
 router.get('/devices', async (req, res) => {
     try {
+        // Get device status from Hanet API (temporarily disabled due to API issues)
+        const hanetData = null; // await getHanetDeviceStatus();
+        
         const pool = await poolPromise;
         const result = await pool.request().query(`
             SELECT 
@@ -302,7 +360,8 @@ router.get('/devices', async (req, res) => {
                 device_name as name,
                 COUNT(*) as totalEvents,
                 MAX(ts_vn) as last_seen,
-                MIN(ts_vn) as firstSeen
+                MIN(ts_vn) as firstSeen,
+                DATEDIFF(MINUTE, MAX(ts_vn), GETDATE()) as minutesSinceLastSeen
             FROM dulieutho 
             WHERE device_id IS NOT NULL AND device_id != '-'
             GROUP BY device_id, device_name
@@ -310,11 +369,32 @@ router.get('/devices', async (req, res) => {
         `);
         
         const devices = result.recordset.map(row => {
-            const lastSeen = new Date(row.last_seen);
-            const now = new Date();
-            const timeDiff = now - lastSeen;
-            const minutesDiff = timeDiff / (1000 * 60); // Chuyển đổi sang phút
-            const hoursDiff = minutesDiff / 60; // Chuyển đổi sang giờ
+            const minutesDiff = row.minutesSinceLastSeen;
+            const hoursDiff = minutesDiff / 60;
+            
+            // Find corresponding device in Hanet API data
+            let hanetDevice = null;
+            if (hanetData && hanetData.data) {
+                hanetDevice = hanetData.data.find(device => 
+                    device.deviceID === row.id || 
+                    device.deviceName === row.name ||
+                    device.deviceName.includes(row.name.split('_')[0]) // Match by location
+                );
+            }
+            
+            // Use Hanet API status if available, otherwise fallback to time-based calculation
+            let status = 'offline';
+            let statusSource = 'fallback';
+            
+            if (hanetDevice) {
+                status = hanetDevice.isOnline ? 'online' : 'offline';
+                statusSource = 'hanet';
+                console.log(`Device ${row.id}: Hanet status = ${status}, isOnline = ${hanetDevice.isOnline}`);
+            } else {
+                status = minutesDiff <= 5 ? 'online' : 'offline';
+                statusSource = 'time-based';
+                console.log(`Device ${row.id}: Fallback status = ${status}, minutesDiff = ${minutesDiff}`);
+            }
             
             return {
                 id: row.id,
@@ -322,8 +402,12 @@ router.get('/devices', async (req, res) => {
                 totalEvents: row.totalEvents,
                 last_seen: row.last_seen,
                 firstSeen: row.firstSeen,
-                status: minutesDiff <= 30 ? 'online' : 'offline', // Online nếu hoạt động trong 30 phút qua
-                hoursSinceLastSeen: minutesDiff > 30 ? Math.round(hoursDiff * 10) / 10 : 0
+                status: status,
+                hoursSinceLastSeen: minutesDiff > 5 ? Math.round(hoursDiff * 10) / 10 : 0,
+                minutesSinceLastSeen: minutesDiff,
+                hanetStatus: hanetDevice ? (hanetDevice.isOnline ? 'online' : 'offline') : 'unknown',
+                hanetDevice: hanetDevice,
+                statusSource: statusSource
             };
         });
         
@@ -331,6 +415,17 @@ router.get('/devices', async (req, res) => {
     } catch (error) {
         console.error('Lỗi lấy danh sách thiết bị:', error.message);
         res.status(500).json({ error: 'Lỗi máy chủ khi lấy danh sách thiết bị' });
+    }
+});
+
+// Test Hanet API endpoint
+router.get('/hanet-devices', async (req, res) => {
+    try {
+        const hanetData = await getHanetDeviceStatus();
+        res.json(hanetData);
+    } catch (error) {
+        console.error('Lỗi test Hanet API:', error.message);
+        res.status(500).json({ error: 'Lỗi test Hanet API' });
     }
 });
 

@@ -896,6 +896,14 @@
         // Initialize app
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Hanet Dashboard v2.0 - Enhanced Version');
+            
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission().then(permission => {
+                    console.log('Notification permission:', permission);
+                });
+            }
+            
             loadData();
             
             // Setup date input formatting
@@ -949,6 +957,7 @@
 
         // Load attendance data
         async function loadData() {
+            console.log('🔄 Loading dashboard data...');
             const statusDiv = document.getElementById('status');
             const tableContainer = document.getElementById('table-container');
             
@@ -956,17 +965,22 @@
                 statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang tải dữ liệu...';
                 statusDiv.className = 'status loading';
                 
+                console.log('📡 Fetching from /attendance-data...');
                 const response = await fetch('/attendance-data');
+                console.log('📡 Response status:', response.status);
+                
                 if (!response.ok) {
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
                 const data = await response.json();
                 console.log('📊 Dữ liệu nhận được:', data);
+                console.log('📊 Số lượng records:', data.length);
                 
                 currentData = data;
                 
                 if (data && data.length > 0) {
+                    console.log('✅ Có dữ liệu, đang cập nhật KPIs và table...');
                     updateKPIs(data);
                     updateTable(data);
                     
@@ -974,6 +988,7 @@
                     statusDiv.className = 'status success';
                     tableContainer.style.display = 'block';
                 } else {
+                    console.log('⚠️ Không có dữ liệu');
                     statusDiv.innerHTML = '⚠️ Không có dữ liệu chấm công';
                     statusDiv.className = 'status error';
                     tableContainer.style.display = 'none';
@@ -989,6 +1004,7 @@
 
         // Update KPIs
         function updateKPIs(data) {
+            console.log('📊 Updating KPIs with data:', data);
             const stats = {
                 total: data.length,
                 onTime: 0,
@@ -997,18 +1013,19 @@
             };
             
             data.forEach(record => {
-                switch (record.TrangThai) {
-                    case 'Đúng giờ':
-                        stats.onTime++;
-                        break;
-                    case 'Đi trễ':
-                        stats.late++;
-                        break;
-                    case 'Về sớm':
-                        stats.early++;
-                        break;
+                console.log('📋 Processing record:', record.TrangThai);
+                // Handle both formats: with and without diacritics
+                const status = record.TrangThai || '';
+                if (status.includes('Dung gio') || status.includes('Đúng giờ')) {
+                    stats.onTime++;
+                } else if (status.includes('Di tre') || status.includes('Đi trễ')) {
+                    stats.late++;
+                } else if (status.includes('Ve som') || status.includes('Về sớm')) {
+                    stats.early++;
                 }
             });
+            
+            console.log('📊 Final stats:', stats);
             
             // Animate numbers
             animateNumber('kpi-total', stats.total);
@@ -1041,10 +1058,23 @@
 
         // Update table
         function updateTable(data) {
+            console.log('📋 Updating table with data:', data);
             const tableBody = document.getElementById('table-body');
             tableBody.innerHTML = '';
             
             data.forEach(record => {
+                console.log('📝 Adding row for:', record.HoTen, record.TrangThai);
+                
+                // Convert status to display format
+                let displayStatus = record.TrangThai || 'Chưa xử lý';
+                if (displayStatus.includes('Dung gio')) {
+                    displayStatus = 'Đúng giờ';
+                } else if (displayStatus.includes('Di tre')) {
+                    displayStatus = 'Đi trễ';
+                } else if (displayStatus.includes('Ve som')) {
+                    displayStatus = 'Về sớm';
+                }
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${record.MaNhanVienNoiBo || '-'}</td>
@@ -1053,10 +1083,11 @@
                     <td>${formatDateTime(record.GioVao)}</td>
                     <td>${formatDateTime(record.GioRa)}</td>
                     <td>${record.ThoiGianLamViec || 0}h</td>
-                    <td><span class="status-badge ${getStatusClass(record.TrangThai)}">${record.TrangThai || 'Chưa xử lý'}</span></td>
+                    <td><span class="status-badge ${getStatusClass(record.TrangThai)}">${displayStatus}</span></td>
                 `;
                 tableBody.appendChild(row);
             });
+            console.log('✅ Table updated with', data.length, 'rows');
         }
 
         // Global variable to store devices data
@@ -1092,6 +1123,7 @@
         
         // Load devices
         async function loadDevices() {
+            console.log('🔄 Loading devices...');
             const statusDiv = document.getElementById('devices-status');
             const tableContainer = document.getElementById('devices-table');
             
@@ -1099,18 +1131,24 @@
                 statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang tải danh sách thiết bị...';
                 statusDiv.className = 'status loading';
                 
-                const response = await fetch('/devices');
+                console.log('📡 Fetching devices from API...');
+                const response = await fetch('/devices?' + new Date().getTime());
+                console.log('📡 Response status:', response.status);
+                
                 const data = await response.json();
+                console.log('📱 Devices data received:', data);
                 
                 // Store devices data globally
                 allDevices = data;
                 
                 if (data && data.length > 0) {
+                    console.log('✅ Updating devices table with', data.length, 'devices');
                     updateDevicesTable(data);
                     statusDiv.innerHTML = `✅ Đã tải ${data.length} thiết bị`;
                     statusDiv.className = 'status success';
                     tableContainer.style.display = 'block';
                 } else {
+                    console.log('⚠️ No devices found');
                     statusDiv.innerHTML = '⚠️ Không có thiết bị nào';
                     statusDiv.className = 'status error';
                     tableContainer.style.display = 'none';
@@ -1126,6 +1164,7 @@
 
         // Update devices table
         function updateDevicesTable(data) {
+            console.log('📋 Updating devices table with data:', data);
             const tableBody = document.getElementById('devices-body');
             const summaryDiv = document.getElementById('device-summary');
             tableBody.innerHTML = '';
@@ -1136,6 +1175,22 @@
             const offlineDevices = totalDevices - onlineDevices;
             const totalEvents = data.reduce((sum, d) => sum + (d.totalEvents || 0), 0);
             
+            console.log('📊 Device stats:', { totalDevices, onlineDevices, offlineDevices, totalEvents });
+            
+            // Check for offline devices and show notification
+            if (offlineDevices > 0) {
+                const offlineDeviceNames = data.filter(d => d.status === 'offline').map(d => d.name).join(', ');
+                console.warn(`⚠️ Có ${offlineDevices} thiết bị offline: ${offlineDeviceNames}`);
+                
+                // Show browser notification if supported
+                if ('Notification' in window && Notification.permission === 'granted') {
+                    new Notification(`Thiết bị offline`, {
+                        body: `${offlineDevices} thiết bị đã offline: ${offlineDeviceNames}`,
+                        icon: '/favicon.ico'
+                    });
+                }
+            }
+            
             // Update summary cards
             document.getElementById('total-devices').textContent = totalDevices;
             document.getElementById('online-devices').textContent = onlineDevices;
@@ -1144,6 +1199,7 @@
             summaryDiv.style.display = 'block';
             
             data.forEach(device => {
+                console.log('📱 Processing device:', device.id, device.name, 'Status:', device.status, 'Minutes since last seen:', device.minutesSinceLastSeen);
                 const row = document.createElement('tr');
                 
                 // Determine device type
@@ -1161,31 +1217,29 @@
                 
                 // Calculate offline time
                 let offlineTime = '-';
-                if (device.status === 'offline' && device.hoursSinceLastSeen) {
-                    const hours = Math.floor(device.hoursSinceLastSeen);
-                    const minutes = Math.floor((device.hoursSinceLastSeen - hours) * 60);
-                    if (hours > 0) {
-                        offlineTime = `${hours}h ${minutes}m`;
-                    } else {
+                if (device.status === 'offline' && device.minutesSinceLastSeen) {
+                    const minutes = device.minutesSinceLastSeen;
+                    if (minutes < 60) {
                         offlineTime = `${minutes}m`;
+                    } else {
+                        const hours = Math.floor(minutes / 60);
+                        const remainingMinutes = minutes % 60;
+                        offlineTime = `${hours}h ${remainingMinutes}m`;
                     }
                 }
                 
                 // Format last seen time
                 let lastSeenFormatted = '-';
                 if (device.last_seen) {
-                    const lastSeenDate = new Date(device.last_seen);
-                    const now = new Date();
-                    const diffMs = now - lastSeenDate;
-                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                    
-                    if (diffHours > 0) {
-                        lastSeenFormatted = `${diffHours}h ${diffMinutes}m trước`;
-                    } else if (diffMinutes > 0) {
-                        lastSeenFormatted = `${diffMinutes}m trước`;
-                    } else {
+                    const minutes = device.minutesSinceLastSeen || 0;
+                    if (minutes < 1) {
                         lastSeenFormatted = 'Vừa xong';
+                    } else if (minutes < 60) {
+                        lastSeenFormatted = `${minutes}m trước`;
+                    } else {
+                        const hours = Math.floor(minutes / 60);
+                        const remainingMinutes = minutes % 60;
+                        lastSeenFormatted = `${hours}h ${remainingMinutes}m trước`;
                     }
                 }
                 
@@ -1196,7 +1250,7 @@
                     <td><span class="status-badge ${device.status === 'online' ? 'online' : 'offline'}">${device.status === 'online' ? 'Hoạt động' : 'Tắt'}</span></td>
                     <td><strong>${device.totalEvents || 0}</strong></td>
                     <td>${lastSeenFormatted}</td>
-                    <td>${offlineTime}</td>
+                    <td style="color: ${device.status === 'offline' ? '#f44336' : '#4CAF50'}; font-weight: bold;">${offlineTime}</td>
                     <td>
                         <button class="action-btn refresh" onclick="refreshDevice('${device.id}')" title="Làm mới">🔄</button>
                         <button class="action-btn details" onclick="showDeviceDetails('${device.id}')" title="Chi tiết">📋</button>
@@ -2058,12 +2112,16 @@
         });
 
         function getStatusClass(status) {
-            switch (status) {
-                case 'Đúng giờ': return 'success';
-                case 'Đi trễ': return 'error';
-                case 'Về sớm': return 'warning';
-                default: return 'info';
+            if (!status) return 'info';
+            // Handle both formats: with and without diacritics
+            if (status.includes('Dung gio') || status.includes('Đúng giờ')) {
+                return 'success';
+            } else if (status.includes('Di tre') || status.includes('Đi trễ')) {
+                return 'error';
+            } else if (status.includes('Ve som') || status.includes('Về sớm')) {
+                return 'warning';
             }
+            return 'info';
         }
 
         // Auto refresh every 30 seconds
@@ -2072,6 +2130,13 @@
                 loadData();
             }
         }, 30000);
+        
+        // Auto refresh devices every 10 seconds for real-time monitoring
+        setInterval(() => {
+            if (currentTab === 'devices') {
+                loadDevices();
+            }
+        }, 10000);
 
         // Employee Management Functions
         async function loadEmployeeManagement() {
