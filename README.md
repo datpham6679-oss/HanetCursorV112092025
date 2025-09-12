@@ -11,11 +11,20 @@ HanetCursorV112092025/
 │   ├── sample_data.sql        # Dữ liệu mẫu
 │   ├── sp_XuLyChamCongMoi.sql # Stored procedure chính
 │   ├── create_calamviec_table.sql # Tạo bảng ca làm việc
-│   └── manage_employee_shifts.sql # Quản lý ca làm việc
+│   ├── manage_employee_shifts.sql # Quản lý ca làm việc
+│   └── README.md              # Hướng dẫn SQL
 ├── public/                    # Frontend files
 │   ├── dashboard.html         # Main dashboard
-│   ├── css/dashboard.css      # Styling
-│   └── js/                    # JavaScript modules
+│   ├── css/                   # Styling files
+│   │   ├── dashboard.css      # Main dashboard styles
+│   │   └── modules.css        # Module-specific styles
+│   └── js/                    # JavaScript modules (modularized)
+│       ├── utils.js           # Utility functions
+│       ├── data.js            # API calls và data fetching
+│       ├── dashboard.js       # Dashboard functionality
+│       ├── reports.js         # Reports functionality
+│       ├── main.js            # Main application entry point
+│       └── backup/            # Old files backup
 ├── modules/                   # Backend modules
 │   └── routes.js              # API routes và webhook
 ├── server.js                  # Main server file
@@ -24,6 +33,74 @@ HanetCursorV112092025/
 ├── package.json               # Dependencies
 └── README.md                  # Documentation
 ```
+
+## 🏗️ Cấu trúc Code (Modularized)
+
+### Frontend Architecture
+Dự án đã được refactor thành cấu trúc modular để dễ quản lý và bảo trì:
+
+#### **JavaScript Modules:**
+- **`utils.js`** (3.6KB): Utility functions chung (date formatting, notifications, loading states)
+- **`data.js`** (9.9KB): API calls và data fetching (attendance, departments, devices)
+- **`dashboard.js`** (6.8KB): Dashboard functionality (KPI updates, charts, tables)
+- **`reports.js`** (11.9KB): Reports functionality (summary, name, ID, department, month reports)
+- **`main.js`** (2.2KB): Main application entry point và initialization
+
+#### **CSS Modules:**
+- **`dashboard.css`**: Main dashboard styles
+- **`modules.css`**: Module-specific styles (notifications, devices, activity, reports)
+
+#### **Lợi ích của cấu trúc mới:**
+- ✅ **Tách biệt trách nhiệm**: Mỗi module có một chức năng cụ thể
+- ✅ **Dễ bảo trì**: Code được tổ chức rõ ràng, dễ tìm và sửa lỗi
+- ✅ **Tái sử dụng**: Các function có thể được sử dụng ở nhiều nơi
+- ✅ **Hiệu suất**: Load chỉ những module cần thiết
+- ✅ **Mở rộng**: Dễ dàng thêm tính năng mới mà không ảnh hưởng code cũ
+
+### Backend Architecture
+- **`server.js`**: Main server entry point
+- **`db.js`**: Database connection và configuration
+- **`helpers.js`**: Utility functions cho backend
+- **`modules/routes.js`**: API routes và webhook handlers
+
+## 📈 Changelog
+
+### Version 2.0 (Latest) - Code Refactoring
+**Ngày:** 12/09/2025
+
+#### **🔄 Major Refactoring:**
+- **Tách nhỏ file `main.js`**: Từ 198KB (5,397 dòng) xuống 2.2KB (60 dòng)
+- **Modular Architecture**: Chia thành 5 modules chuyên biệt
+- **Loại bỏ code duplicate**: Xóa 6 lần lặp lại section "REPORTS FUNCTIONS"
+- **Tối ưu cấu trúc**: Tổ chức lại code theo chức năng
+
+#### **📁 New File Structure:**
+```
+public/js/
+├── utils.js (3.6KB)     # Utility functions
+├── data.js (9.9KB)      # API calls
+├── dashboard.js (6.8KB) # Dashboard logic
+├── reports.js (11.9KB)  # Reports logic
+├── main.js (2.2KB)      # Main entry point
+└── backup/              # Old files backup
+```
+
+#### **✨ Improvements:**
+- ✅ **Performance**: Giảm 99% kích thước file chính
+- ✅ **Maintainability**: Code dễ đọc và bảo trì hơn
+- ✅ **Scalability**: Dễ dàng thêm tính năng mới
+- ✅ **Debugging**: Dễ tìm và sửa lỗi
+- ✅ **Team Development**: Nhiều người có thể làm việc song song
+
+### Version 1.0 - Initial Release
+**Ngày:** 11/09/2025
+
+#### **🚀 Core Features:**
+- Webhook Hanet integration
+- Dashboard với KPI và charts
+- Reports system với Excel export
+- Device monitoring
+- Vietnamese language support
 
 ## 🚀 Tính năng chính
 

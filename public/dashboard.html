@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CÔNG TY THỦY ĐIỆN BUÔN KUỐP CHECKIN 4.0</title>
     <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/modules.css">
     
     <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -344,9 +345,11 @@
                 </div>
             </section>
 
-    <script src="/js/api.js"></script>
-    <script src="/js/dom.js"></script>
-    <script src="/js/export.js"></script>
-    <script src="/js/main.js"></script>
+    <!-- Load modules in correct order -->
+    <script src="/js/utils.js"></script>
+    <script src="/js/data.js"></script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/reports.js"></script>
+    <script src="/js/main-new.js"></script>
 </body>
 </html>
