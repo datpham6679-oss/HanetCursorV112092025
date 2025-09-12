@@ -390,15 +390,34 @@
                     <h3>🔍 Tìm kiếm nhân viên</h3>
                     
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                        <!-- Employee Selection -->
+                        <!-- Employee Name Search -->
                         <div>
-                            <label>Chọn nhân viên:</label>
+                            <label>Tìm theo tên nhân viên:</label>
                             <div style="position: relative;">
-                                <input type="text" id="employee-search" class="form-input" placeholder="Gõ tên nhân viên để tìm kiếm..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                <div id="employee-dropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none;">
+                                <input type="text" id="employee-name-search" class="form-input" placeholder="Gõ tên nhân viên..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div id="employee-name-dropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none;">
                                 </div>
                             </div>
-                            <input type="hidden" id="employee-select" value="">
+                        </div>
+                        
+                        <!-- Employee ID Search -->
+                        <div>
+                            <label>Tìm theo mã nhân viên nội bộ:</label>
+                            <div style="position: relative;">
+                                <input type="text" id="employee-id-search" class="form-input" placeholder="Gõ mã nhân viên..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <div id="employee-id-dropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none;">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Selected Employee Display -->
+                        <div>
+                            <label>Nhân viên đã chọn:</label>
+                            <div id="selected-employee-info" style="padding: 8px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; min-height: 36px; display: flex; align-items: center;">
+                                <span style="color: #666;">Chưa chọn nhân viên</span>
+                            </div>
+                            <input type="hidden" id="selected-employee-id" value="">
+                            <input type="hidden" id="selected-employee-name" value="">
                         </div>
                         
                         <!-- Date Selection -->
@@ -1241,6 +1260,7 @@
 
         // Global employee list
         let allEmployees = [];
+        let allEmployeeData = [];
 
         // Load employee list for detail view
         async function loadEmployeeList() {
@@ -1251,8 +1271,10 @@
                     const data = await response.json();
                     console.log('📊 Employee data received:', data.length, 'records');
                     
+                    allEmployeeData = data; // Store full employee data
                     allEmployees = [...new Set(data.map(record => record.TenNhanVien || record.HoTen).filter(name => name))];
                     console.log('👥 Unique employees:', allEmployees);
+                    console.log('📊 Full employee data:', allEmployeeData);
                     
                     // Setup autocomplete
                     setupEmployeeAutocomplete();
@@ -1266,18 +1288,23 @@
 
         // Setup employee autocomplete
         function setupEmployeeAutocomplete() {
-            const searchInput = document.getElementById('employee-search');
-            const dropdown = document.getElementById('employee-dropdown');
-            const hiddenInput = document.getElementById('employee-select');
+            const nameSearchInput = document.getElementById('employee-name-search');
+            const nameDropdown = document.getElementById('employee-name-dropdown');
+            const idSearchInput = document.getElementById('employee-id-search');
+            const idDropdown = document.getElementById('employee-id-dropdown');
+            const selectedInfo = document.getElementById('selected-employee-info');
+            const selectedIdInput = document.getElementById('selected-employee-id');
+            const selectedNameInput = document.getElementById('selected-employee-name');
             
-            console.log('🔧 Setting up autocomplete:', { searchInput, dropdown, hiddenInput });
+            console.log('🔧 Setting up enhanced autocomplete');
             
-            searchInput.addEventListener('input', (e) => {
+            // Employee name search
+            nameSearchInput.addEventListener('input', (e) => {
                 const query = e.target.value.toLowerCase();
-                console.log('🔍 Search query:', query);
+                console.log('🔍 Name search query:', query);
                 
                 if (query.length < 2) {
-                    dropdown.style.display = 'none';
+                    nameDropdown.style.display = 'none';
                     return;
                 }
                 
@@ -1285,10 +1312,10 @@
                     emp.toLowerCase().includes(query)
                 );
                 
-                console.log('📋 Filtered employees:', filteredEmployees);
+                console.log('📋 Filtered employees by name:', filteredEmployees);
                 
                 if (filteredEmployees.length > 0) {
-                    dropdown.innerHTML = '';
+                    nameDropdown.innerHTML = '';
                     filteredEmployees.forEach(emp => {
                         const item = document.createElement('div');
                         item.style.padding = '8px 12px';
@@ -1296,10 +1323,10 @@
                         item.style.borderBottom = '1px solid #eee';
                         item.textContent = emp;
                         item.addEventListener('click', () => {
-                            console.log('👤 Employee selected:', emp);
-                            searchInput.value = emp;
-                            hiddenInput.value = emp;
-                            dropdown.style.display = 'none';
+                            console.log('👤 Employee selected by name:', emp);
+                            selectEmployee(emp, 'name');
+                            nameSearchInput.value = emp;
+                            nameDropdown.style.display = 'none';
                         });
                         item.addEventListener('mouseenter', () => {
                             item.style.backgroundColor = '#f5f5f5';
@@ -1307,18 +1334,120 @@
                         item.addEventListener('mouseleave', () => {
                             item.style.backgroundColor = 'white';
                         });
-                        dropdown.appendChild(item);
+                        nameDropdown.appendChild(item);
                     });
-                    dropdown.style.display = 'block';
+                    nameDropdown.style.display = 'block';
                 } else {
-                    dropdown.style.display = 'none';
+                    nameDropdown.style.display = 'none';
                 }
             });
             
-            // Hide dropdown when clicking outside
+            // Employee ID search
+            idSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                console.log('🔍 ID search query:', query);
+                
+                if (query.length < 1) {
+                    idDropdown.style.display = 'none';
+                    return;
+                }
+                
+                const filteredEmployees = allEmployees.filter(emp => {
+                    // Find employee data to get ID
+                    const empData = allEmployeeData.find(data => 
+                        (data.TenNhanVien || data.HoTen) === emp
+                    );
+                    if (empData && empData.MaNhanVienNoiBo) {
+                        return empData.MaNhanVienNoiBo.toLowerCase().includes(query);
+                    }
+                    return false;
+                });
+                
+                console.log('📋 Filtered employees by ID:', filteredEmployees);
+                
+                if (filteredEmployees.length > 0) {
+                    idDropdown.innerHTML = '';
+                    filteredEmployees.forEach(emp => {
+                        const empData = allEmployeeData.find(data => 
+                            (data.TenNhanVien || data.HoTen) === emp
+                        );
+                        const item = document.createElement('div');
+                        item.style.padding = '8px 12px';
+                        item.style.cursor = 'pointer';
+                        item.style.borderBottom = '1px solid #eee';
+                        item.innerHTML = `
+                            <div style="font-weight: bold;">${emp}</div>
+                            <div style="font-size: 0.9em; color: #666;">Mã: ${empData?.MaNhanVienNoiBo || 'N/A'}</div>
+                        `;
+                        item.addEventListener('click', () => {
+                            console.log('👤 Employee selected by ID:', emp);
+                            selectEmployee(emp, 'id');
+                            idSearchInput.value = empData?.MaNhanVienNoiBo || '';
+                            idDropdown.style.display = 'none';
+                        });
+                        item.addEventListener('mouseenter', () => {
+                            item.style.backgroundColor = '#f5f5f5';
+                        });
+                        item.addEventListener('mouseleave', () => {
+                            item.style.backgroundColor = 'white';
+                        });
+                        idDropdown.appendChild(item);
+                    });
+                    idDropdown.style.display = 'block';
+                } else {
+                    idDropdown.style.display = 'none';
+                }
+            });
+            
+            // Function to select employee
+            function selectEmployee(employeeName, searchType) {
+                const empData = allEmployeeData.find(data => 
+                    (data.TenNhanVien || data.HoTen) === employeeName
+                );
+                
+                if (empData) {
+                    selectedIdInput.value = empData.MaNhanVienNoiBo || '';
+                    selectedNameInput.value = employeeName;
+                    
+                    selectedInfo.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong>${employeeName}</strong><br>
+                                <small style="color: #666;">Mã: ${empData.MaNhanVienNoiBo || 'N/A'}</small>
+                            </div>
+                            <button onclick="clearEmployeeSelection()" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">✕</button>
+                        </div>
+                    `;
+                    
+                    // Clear other search inputs
+                    if (searchType === 'name') {
+                        idSearchInput.value = '';
+                        idDropdown.style.display = 'none';
+                    } else {
+                        nameSearchInput.value = '';
+                        nameDropdown.style.display = 'none';
+                    }
+                }
+            }
+            
+            // Make clearEmployeeSelection globally available
+            window.clearEmployeeSelection = function() {
+                selectedIdInput.value = '';
+                selectedNameInput.value = '';
+                selectedInfo.innerHTML = '<span style="color: #666;">Chưa chọn nhân viên</span>';
+                nameSearchInput.value = '';
+                idSearchInput.value = '';
+                nameDropdown.style.display = 'none';
+                idDropdown.style.display = 'none';
+            };
+            
+            // Hide dropdowns when clicking outside
             document.addEventListener('click', (e) => {
-                if (!searchInput.contains(e.target) && !dropdown.contains(e.target)) {
-                    dropdown.style.display = 'none';
+                if (!nameSearchInput.contains(e.target) && !nameDropdown.contains(e.target)) {
+                    nameDropdown.style.display = 'none';
+                }
+                if (!idSearchInput.contains(e.target) && !idDropdown.contains(e.target)) {
+                    idDropdown.style.display = 'none';
                 }
             });
         }
@@ -1374,15 +1503,16 @@
 
         // Load employee detail
         async function loadEmployeeDetail() {
-            const employeeName = document.getElementById('employee-select').value;
+            const selectedEmployeeId = document.getElementById('selected-employee-id').value;
+            const selectedEmployeeName = document.getElementById('selected-employee-name').value;
             const selectedDate = document.getElementById('detail-date').value;
             const statusDiv = document.getElementById('employee-detail-status');
             const summaryDiv = document.getElementById('employee-summary');
             const timelineDiv = document.getElementById('employee-timeline');
             
-            console.log('🔍 Debug loadEmployeeDetail:', { employeeName, selectedDate });
+            console.log('🔍 Debug loadEmployeeDetail:', { selectedEmployeeId, selectedEmployeeName, selectedDate });
             
-            if (!employeeName || !selectedDate) {
+            if (!selectedEmployeeName || !selectedDate) {
                 statusDiv.innerHTML = '⚠️ Vui lòng chọn nhân viên và ngày';
                 statusDiv.className = 'status error';
                 return;
@@ -1404,13 +1534,13 @@
                 statusDiv.className = 'status loading';
                 
                 // Load processed data
-                const processedResponse = await fetch(`/attendance-data?personId=${encodeURIComponent(employeeName)}&startDate=${apiDate}&endDate=${apiDate}`);
+                const processedResponse = await fetch(`/attendance-data?personId=${encodeURIComponent(selectedEmployeeName)}&startDate=${apiDate}&endDate=${apiDate}`);
                 const processedData = processedResponse.ok ? await processedResponse.json() : [];
                 
                 console.log('📊 Processed data response:', processedResponse.status, processedData);
                 
                 // Load raw data
-                const rawResponse = await fetch(`/raw-events?personName=${encodeURIComponent(employeeName)}&date=${apiDate}`);
+                const rawResponse = await fetch(`/raw-events?personName=${encodeURIComponent(selectedEmployeeName)}&date=${apiDate}`);
                 const rawData = rawResponse.ok ? await rawResponse.json() : [];
                 
                 console.log('📊 Raw data response:', rawResponse.status, rawData);
@@ -1418,14 +1548,14 @@
                 
                 if (processedData.length > 0 || rawData.length > 0) {
                     updateEmployeeSummary(processedData, rawData);
-                    updateEmployeeTimeline(rawData, employeeName, selectedDate);
+                    updateEmployeeTimeline(rawData, selectedEmployeeName, selectedDate);
                     
-                    statusDiv.innerHTML = `✅ Đã tải chi tiết cho ${employeeName} ngày ${formatDate(selectedDate)}`;
+                    statusDiv.innerHTML = `✅ Đã tải chi tiết cho ${selectedEmployeeName} ngày ${formatDate(selectedDate)}`;
                     statusDiv.className = 'status success';
                     summaryDiv.style.display = 'block';
                     timelineDiv.style.display = 'block';
                 } else {
-                    statusDiv.innerHTML = `⚠️ Không có dữ liệu cho ${employeeName} ngày ${formatDate(selectedDate)}`;
+                    statusDiv.innerHTML = `⚠️ Không có dữ liệu cho ${selectedEmployeeName} ngày ${formatDate(selectedDate)}`;
                     statusDiv.className = 'status error';
                     summaryDiv.style.display = 'none';
                     timelineDiv.style.display = 'none';
@@ -1485,7 +1615,9 @@
             tableBody.innerHTML = '';
             
             // Update display info
-            document.getElementById('selected-employee-display').textContent = employeeName;
+            const selectedEmployeeId = document.getElementById('selected-employee-id').value;
+            const displayText = selectedEmployeeId ? `${employeeName} (${selectedEmployeeId})` : employeeName;
+            document.getElementById('selected-employee-display').textContent = displayText;
             document.getElementById('selected-date-display').textContent = formatDate(selectedDate);
             
             // Sort by time (latest first)
