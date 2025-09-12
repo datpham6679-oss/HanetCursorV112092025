@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CÔNG TY THỦY ĐIỆN BUÔN KUỐP CHECKIN 4.0</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    
+    <script src="https://unpkg.com/xlsx/dist/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="layout">
+        <aside class="sidebar">
+            <div class="brand">CHECKIN 4.0</div>
+            <nav class="menu">
+                <button class="menu-item active" data-tab="dashboard">Dashboard</button>
+                <button class="menu-item" data-tab="devices">Thiết bị</button>
+                <button class="menu-item" data-tab="activity">Hoạt động</button>
+                <button class="menu-item" data-tab="reports">Báo cáo</button>
+                <button class="menu-item" data-tab="faceid">FACEID</button>
+            </nav>
+        </aside>
+        <main class="main">
+            <header class="page-header">
+        <h1>CÔNG TY THỦY ĐIỆN BUÔN KUỐP</h1>
+            </header>
+
+            <section id="tab-dashboard" class="tab-panel active">
+                <div class="tab-header">
+                    <h2>Dashboard</h2>
+                    <button class="btn-refresh" onclick="refreshDashboardData()">🔄 Làm mới</button>
+                </div>
+                <div class="kpis">
+                    <div class="kpi-card accent-1">
+                        <div class="kpi-title">Tổng bản ghi</div>
+                        <div class="kpi-value" id="kpi-total">0</div>
+                    </div>
+                    <div class="kpi-card accent-2">
+                        <div class="kpi-title">Đúng giờ</div>
+                        <div class="kpi-value" id="kpi-on-time">0</div>
+                    </div>
+                    <div class="kpi-card accent-3">
+                        <div class="kpi-title">Đi trễ</div>
+                        <div class="kpi-value" id="kpi-late">0</div>
+                    </div>
+                    <div class="kpi-card accent-4">
+                        <div class="kpi-title">Về sớm</div>
+                        <div class="kpi-value" id="kpi-early">0</div>
+                    </div>
+                    <div class="kpi-card accent-5">
+                        <div class="kpi-title">Phòng ban</div>
+                        <div class="kpi-value" id="kpi-departments">0</div>
+                    </div>
+                    <div class="kpi-card accent-6">
+                        <div class="kpi-title">Nhân sự</div>
+                        <div class="kpi-value" id="kpi-people">0</div>
+                    </div>
+                </div>
+                <div class="dash-viz">
+                    <div class="viz-card">
+                        <div class="viz-title">Hôm nay</div>
+                        <div class="today-cards">
+                            <div class="today-card">
+                                <div class="today-label">Đúng giờ</div>
+                                <div class="today-value" id="today-on-time">0</div>
+                            </div>
+                            <div class="today-card">
+                                <div class="today-label">Đi trễ</div>
+                                <div class="today-value" id="today-late">0</div>
+                            </div>
+                            <div class="today-card">
+                                <div class="today-label">Về sớm</div>
+                                <div class="today-value" id="today-early">0</div>
+                            </div>
+                            <div class="today-card">
+                                <div class="today-label">Tổng lượt</div>
+                                <div class="today-value" id="today-total">0</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section id="tab-devices" class="tab-panel">
+                <div class="devices-header">
+                    <h2>Danh sách thiết bị</h2>
+                    <div class="devices-controls">
+                        <div class="filter-group">
+                            <label for="status-filter">Lọc theo trạng thái:</label>
+                            <select id="status-filter" onchange="filterDevices()">
+                                <option value="all">Tất cả</option>
+                                <option value="online">Online</option>
+                                <option value="offline">Offline</option>
+                            </select>
+                        </div>
+                        <button class="btn-refresh" onclick="refreshDevices()" title="Làm mới dữ liệu">
+                            🔄 Làm mới
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="devices-stats">
+                    <div class="stat-card online">
+                        <div class="stat-number" id="online-count">0</div>
+                        <div class="stat-label">Online</div>
+                    </div>
+                    <div class="stat-card offline">
+                        <div class="stat-number" id="offline-count">0</div>
+                        <div class="stat-label">Offline</div>
+                    </div>
+                    <div class="stat-card total">
+                        <div class="stat-number" id="total-count">0</div>
+                        <div class="stat-label">Tổng cộng</div>
+                    </div>
+                </div>
+                
+                <div class="filter-info" id="filter-info">
+                    Hiển thị tất cả thiết bị
+                </div>
+                
+                <div id="devices-container" class="devices-grid">
+                    <div class="loading">Đang tải danh sách thiết bị...</div>
+                </div>
+            </section>
+
+            <section id="tab-activity" class="tab-panel">
+                <div class="activity-header">
+                    <h2>Hoạt động chấm công</h2>
+                    <button class="btn-refresh" onclick="refreshActivityData()" title="Làm mới dữ liệu">
+                        🔄 Làm mới
+                    </button>
+                </div>
+                
+                <div class="filters">
+                    <div>
+                        <label for="act-start">Từ ngày:</label>
+                        <input type="date" id="act-start">
+                    </div>
+                    <div>
+                        <label for="act-end">Đến ngày:</label>
+                        <input type="date" id="act-end">
+                    </div>
+                    <div>
+                        <label for="act-person">Mã NV:</label>
+                        <input type="text" id="act-person" placeholder="VD: 300029">
+                    </div>
+                    <div>
+                        <label for="act-status">Trạng thái:</label>
+                        <select id="act-status">
+                            <option value="">-- Tất cả --</option>
+                            <option value="Đúng giờ">Đúng giờ</option>
+                            <option value="Không đúng giờ quy định">Không đúng giờ quy định</option>
+                        </select>
+                    </div>
+                    <button type="button" onclick="loadActivityAttendance()">Lọc</button>
+                </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Mã Nhân Viên</th>
+                    <th>Họ và Tên</th>
+                    <th>Ngày công</th>
+                    <th>Ngày vào</th>
+                    <th>Ngày ra</th>
+                    <th>Giờ vào</th>
+                    <th>Giờ ra</th>
+                    <th>Thời gian làm việc (giờ)</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+                    <tbody id="activity-attendance-data"></tbody>
+        </table>
+
+                <div class="filters" style="margin-top:16px;">
+                    <div>
+                        <label for="act-month">Tháng:</label>
+                        <input type="month" id="act-month">
+                    </div>
+                    <button type="button" onclick="loadMonthlySummary()">Tổng hợp theo tháng</button>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Mã Nhân Viên</th>
+                            <th>Họ và Tên</th>
+                            <th>Tháng</th>
+                            <th>Số công (Đúng giờ)</th>
+                        </tr>
+                    </thead>
+                    <tbody id="activity-monthly-data"></tbody>
+                </table>
+            </section>
+
+            <section id="tab-faceid" class="tab-panel">
+                <div class="subtabs">
+                    <button class="subtab-btn active" data-subtab="faceid-home">FACEID</button>
+                    <button class="subtab-btn" data-subtab="faceid-departments">Phòng ban</button>
+    </div>
+
+                <div id="faceid-home" class="subtab-panel active">
+                    <p>FACEID: nội dung sẽ cập nhật sau.</p>
+                </div>
+                <div id="faceid-departments" class="subtab-panel">
+                    <div class="filters">
+                        <button type="button" onclick="loadFaceIdDepartments()">Tải danh sách phòng ban</button>
+                    </div>
+                    <ul id="faceid-dept-list"></ul>
+                </div>
+                
+            </section>
+
+            <section id="tab-reports" class="tab-panel">
+                <div class="reports-header">
+                    <h2>Báo cáo chấm công</h2>
+                    <button class="btn-refresh" onclick="refreshReportsData()" title="Làm mới dữ liệu">
+                        🔄 Làm mới
+                    </button>
+                </div>
+
+                <div class="reports-tabs">
+                    <button class="report-tab-btn active" data-report="summary">Tổng hợp</button>
+                    <button class="report-tab-btn" data-report="byname">Theo tên</button>
+                    <button class="report-tab-btn" data-report="byid">Theo mã NV</button>
+                    <button class="report-tab-btn" data-report="bydepartment">Theo phòng ban</button>
+                    <button class="report-tab-btn" data-report="bymonth">Theo tháng</button>
+                </div>
+
+                <!-- Báo cáo tổng hợp -->
+                <div id="report-summary" class="report-panel active">
+                    <div class="report-controls">
+                        <div class="control-group">
+                            <label for="summary-start">Từ ngày:</label>
+                            <input type="date" id="summary-start">
+                        </div>
+                        <div class="control-group">
+                            <label for="summary-end">Đến ngày:</label>
+                            <input type="date" id="summary-end">
+                        </div>
+                        <div class="control-group">
+                            <label for="summary-department">Phòng ban:</label>
+                            <select id="summary-department">
+                                <option value="">-- Tất cả --</option>
+                            </select>
+                        </div>
+                        <button class="btn-generate" onclick="generateSummaryReport()">Tạo báo cáo</button>
+                        <button class="btn-export" onclick="exportSummaryReport()">📊 Xuất Excel</button>
+                    </div>
+                    <div id="summary-results" class="report-results">
+                        <div class="no-data">Chọn khoảng thời gian và nhấn "Tạo báo cáo" để xem dữ liệu</div>
+                    </div>
+                </div>
+
+                <!-- Báo cáo theo tên -->
+                <div id="report-byname" class="report-panel">
+                    <div class="report-controls">
+                        <div class="control-group">
+                            <label for="name-start">Từ ngày:</label>
+                            <input type="date" id="name-start">
+                        </div>
+                        <div class="control-group">
+                            <label for="name-end">Đến ngày:</label>
+                            <input type="date" id="name-end">
+                        </div>
+                        <div class="control-group">
+                            <label for="name-search">Tìm theo tên:</label>
+                            <input type="text" id="name-search" placeholder="Nhập tên nhân viên...">
+                        </div>
+                        <button class="btn-generate" onclick="generateNameReport()">Tạo báo cáo</button>
+                        <button class="btn-export" onclick="exportNameReport()">📊 Xuất Excel</button>
+                    </div>
+                    <div id="name-results" class="report-results">
+                        <div class="no-data">Chọn khoảng thời gian và nhấn "Tạo báo cáo" để xem dữ liệu</div>
+                    </div>
+                </div>
+
+                <!-- Báo cáo theo mã NV -->
+                <div id="report-byid" class="report-panel">
+                    <div class="report-controls">
+                        <div class="control-group">
+                            <label for="id-start">Từ ngày:</label>
+                            <input type="date" id="id-start">
+                        </div>
+                        <div class="control-group">
+                            <label for="id-end">Đến ngày:</label>
+                            <input type="date" id="id-end">
+                        </div>
+                        <div class="control-group">
+                            <label for="id-search">Mã nhân viên:</label>
+                            <input type="text" id="id-search" placeholder="VD: 300029">
+                        </div>
+                        <button class="btn-generate" onclick="generateIdReport()">Tạo báo cáo</button>
+                        <button class="btn-export" onclick="exportIdReport()">📊 Xuất Excel</button>
+                    </div>
+                    <div id="id-results" class="report-results">
+                        <div class="no-data">Chọn khoảng thời gian và nhấn "Tạo báo cáo" để xem dữ liệu</div>
+                    </div>
+                </div>
+
+                <!-- Báo cáo theo phòng ban -->
+                <div id="report-bydepartment" class="report-panel">
+                    <div class="report-controls">
+                        <div class="control-group">
+                            <label for="dept-start">Từ ngày:</label>
+                            <input type="date" id="dept-start">
+                        </div>
+                        <div class="control-group">
+                            <label for="dept-end">Đến ngày:</label>
+                            <input type="date" id="dept-end">
+                        </div>
+                        <div class="control-group">
+                            <label for="dept-select">Phòng ban:</label>
+                            <select id="dept-select">
+                                <option value="">-- Chọn phòng ban --</option>
+                            </select>
+                        </div>
+                        <button class="btn-generate" onclick="generateDepartmentReport()">Tạo báo cáo</button>
+                        <button class="btn-export" onclick="exportDepartmentReport()">📊 Xuất Excel</button>
+                    </div>
+                    <div id="dept-results" class="report-results">
+                        <div class="no-data">Chọn khoảng thời gian và nhấn "Tạo báo cáo" để xem dữ liệu</div>
+                    </div>
+                </div>
+
+                <!-- Báo cáo theo tháng -->
+                <div id="report-bymonth" class="report-panel">
+                    <div class="report-controls">
+                        <div class="control-group">
+                            <label for="month-select">Tháng:</label>
+                            <input type="month" id="month-select">
+                        </div>
+                        <div class="control-group">
+                            <label for="month-department">Phòng ban:</label>
+                            <select id="month-department">
+                                <option value="">-- Tất cả --</option>
+                            </select>
+                        </div>
+                        <button class="btn-generate" onclick="generateMonthReport()">Tạo báo cáo</button>
+                        <button class="btn-export" onclick="exportMonthReport()">📊 Xuất Excel</button>
+                    </div>
+                    <div id="month-results" class="report-results">
+                        <div class="no-data">Chọn tháng và nhấn "Tạo báo cáo" để xem dữ liệu</div>
+                    </div>
+                </div>
+            </section>
+
+    <script src="/js/api.js"></script>
+    <script src="/js/dom.js"></script>
+    <script src="/js/export.js"></script>
+    <script src="/js/main.js"></script>
+</body>
+</html>
