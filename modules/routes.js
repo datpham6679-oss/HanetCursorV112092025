@@ -297,12 +297,12 @@ router.get('/devices', async (req, res) => {
     try {
         const pool = await poolPromise;
         const result = await pool.request().query(`
-            SELECT DISTINCT 
-                device_id,
-                device_name,
-                COUNT(*) as total_events,
+            SELECT 
+                device_id as id,
+                device_name as name,
+                COUNT(*) as totalEvents,
                 MAX(ts_vn) as last_seen,
-                MIN(ts_vn) as first_seen
+                MIN(ts_vn) as firstSeen
             FROM dulieutho 
             WHERE device_id IS NOT NULL AND device_id != '-'
             GROUP BY device_id, device_name
@@ -313,16 +313,17 @@ router.get('/devices', async (req, res) => {
             const lastSeen = new Date(row.last_seen);
             const now = new Date();
             const timeDiff = now - lastSeen;
-            const hoursDiff = timeDiff / (1000 * 60 * 60); // Chuyển đổi sang giờ
+            const minutesDiff = timeDiff / (1000 * 60); // Chuyển đổi sang phút
+            const hoursDiff = minutesDiff / 60; // Chuyển đổi sang giờ
             
             return {
-                id: row.device_id,
-                name: row.device_name,
-                totalEvents: row.total_events,
-                lastSeen: row.last_seen,
-                firstSeen: row.first_seen,
-                status: hoursDiff <= 24 ? 'online' : 'offline', // Online nếu hoạt động trong 24h qua
-                hoursSinceLastSeen: Math.round(hoursDiff * 10) / 10
+                id: row.id,
+                name: row.name,
+                totalEvents: row.totalEvents,
+                last_seen: row.last_seen,
+                firstSeen: row.firstSeen,
+                status: minutesDiff <= 30 ? 'online' : 'offline', // Online nếu hoạt động trong 30 phút qua
+                hoursSinceLastSeen: minutesDiff > 30 ? Math.round(hoursDiff * 10) / 10 : 0
             };
         });
         

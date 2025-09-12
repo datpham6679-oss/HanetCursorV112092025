@@ -52,10 +52,57 @@
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
-        @media (max-width: 768px) {
-            .layout { flex-direction: column; }
-            .sidebar { width: 100%; }
-            .kpis { grid-template-columns: repeat(2, 1fr); }
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .status-badge.online {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-badge.offline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .device-type {
+            padding: 2px 6px;
+            border-radius: 8px;
+            font-size: 0.8em;
+            font-weight: bold;
+        }
+        .device-type.in {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .device-type.out {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        .device-type.unknown {
+            background: #f5f5f5;
+            color: #666;
+        }
+        .action-btn {
+            padding: 4px 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.8em;
+            margin: 2px;
+        }
+        .action-btn.refresh {
+            background: #4CAF50;
+            color: white;
+        }
+        .action-btn.details {
+            background: #2196F3;
+            color: white;
+        }
+        .action-btn:hover {
+            opacity: 0.8;
         }
 
         /* Calendar Widget Styles */
@@ -332,19 +379,49 @@
 
             <!-- Devices Tab -->
             <div id="tab-devices" class="tab-content">
-                <h2>📱 Thiết bị</h2>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <h2>📱 Thiết bị</h2>
+                    <button class="btn" onclick="loadDevices()">🔄 Làm mới</button>
+                </div>
+                
+                <!-- Device Summary Cards -->
+                <div id="device-summary" style="display: none; margin-bottom: 20px;">
+                    <div class="kpis">
+                        <div class="kpi-card">
+                            <div class="kpi-title">Tổng thiết bị</div>
+                            <div class="kpi-value" id="total-devices">0</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">Đang hoạt động</div>
+                            <div class="kpi-value" id="online-devices" style="color: #4CAF50;">0</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">Không hoạt động</div>
+                            <div class="kpi-value" id="offline-devices" style="color: #f44336;">0</div>
+                        </div>
+                        <div class="kpi-card">
+                            <div class="kpi-title">Tổng sự kiện</div>
+                            <div class="kpi-value" id="total-events">0</div>
+                        </div>
+                    </div>
+                </div>
+                
                 <div id="devices-status" class="status loading">
                     <span class="loading-spinner"></span> Đang tải danh sách thiết bị...
                 </div>
+                
                 <div id="devices-table" class="table-container" style="display: none;">
                     <table class="table">
                         <thead>
                             <tr>
-                                <th>Thiết bị</th>
-                                <th>Tên</th>
-                                <th>Trạng thái</th>
-                                <th>Sự kiện</th>
-                                <th>Lần cuối</th>
+                                <th style="width: 15%;">ID Thiết bị</th>
+                                <th style="width: 20%;">Tên thiết bị</th>
+                                <th style="width: 10%;">Loại</th>
+                                <th style="width: 10%;">Trạng thái</th>
+                                <th style="width: 10%;">Sự kiện</th>
+                                <th style="width: 15%;">Lần cuối</th>
+                                <th style="width: 10%;">Thời gian offline</th>
+                                <th style="width: 10%;">Hành động</th>
                             </tr>
                         </thead>
                         <tbody id="devices-body">
@@ -982,6 +1059,37 @@
             });
         }
 
+        // Global variable to store devices data
+        let allDevices = [];
+        
+        // Device action functions
+        function refreshDevice(deviceId) {
+            console.log('🔄 Refreshing device:', deviceId);
+            // Reload devices data
+            loadDevices();
+        }
+        
+        function showDeviceDetails(deviceId) {
+            console.log('📋 Showing device details:', deviceId);
+            // Find device data
+            const device = allDevices?.find(d => d.id === deviceId);
+            if (device) {
+                const details = `
+📱 Chi tiết thiết bị:
+• ID: ${device.id}
+• Tên: ${device.name}
+• Trạng thái: ${device.status === 'online' ? 'Hoạt động' : 'Tắt'}
+• Tổng sự kiện: ${device.totalEvents || 0}
+• Lần cuối: ${device.last_seen ? new Date(device.last_seen).toLocaleString('vi-VN') : 'Chưa có'}
+• Lần đầu: ${device.firstSeen ? new Date(device.firstSeen).toLocaleString('vi-VN') : 'Chưa có'}
+• Thời gian offline: ${device.hoursSinceLastSeen ? Math.round(device.hoursSinceLastSeen * 10) / 10 + ' giờ' : 'N/A'}
+                `;
+                alert(details);
+            } else {
+                alert('Không tìm thấy thông tin thiết bị');
+            }
+        }
+        
         // Load devices
         async function loadDevices() {
             const statusDiv = document.getElementById('devices-status');
@@ -993,6 +1101,9 @@
                 
                 const response = await fetch('/devices');
                 const data = await response.json();
+                
+                // Store devices data globally
+                allDevices = data;
                 
                 if (data && data.length > 0) {
                     updateDevicesTable(data);
@@ -1016,16 +1127,80 @@
         // Update devices table
         function updateDevicesTable(data) {
             const tableBody = document.getElementById('devices-body');
+            const summaryDiv = document.getElementById('device-summary');
             tableBody.innerHTML = '';
+            
+            // Calculate summary statistics
+            const totalDevices = data.length;
+            const onlineDevices = data.filter(d => d.status === 'online').length;
+            const offlineDevices = totalDevices - onlineDevices;
+            const totalEvents = data.reduce((sum, d) => sum + (d.totalEvents || 0), 0);
+            
+            // Update summary cards
+            document.getElementById('total-devices').textContent = totalDevices;
+            document.getElementById('online-devices').textContent = onlineDevices;
+            document.getElementById('offline-devices').textContent = offlineDevices;
+            document.getElementById('total-events').textContent = totalEvents;
+            summaryDiv.style.display = 'block';
             
             data.forEach(device => {
                 const row = document.createElement('tr');
+                
+                // Determine device type
+                let deviceType = 'unknown';
+                let deviceTypeClass = 'unknown';
+                if (device.device_name) {
+                    if (device.device_name.includes('_IN') || device.device_name.includes('IN')) {
+                        deviceType = 'Vào';
+                        deviceTypeClass = 'in';
+                    } else if (device.device_name.includes('_OUT') || device.device_name.includes('OUT')) {
+                        deviceType = 'Ra';
+                        deviceTypeClass = 'out';
+                    }
+                }
+                
+                // Calculate offline time
+                let offlineTime = '-';
+                if (device.status === 'offline' && device.hoursSinceLastSeen) {
+                    const hours = Math.floor(device.hoursSinceLastSeen);
+                    const minutes = Math.floor((device.hoursSinceLastSeen - hours) * 60);
+                    if (hours > 0) {
+                        offlineTime = `${hours}h ${minutes}m`;
+                    } else {
+                        offlineTime = `${minutes}m`;
+                    }
+                }
+                
+                // Format last seen time
+                let lastSeenFormatted = '-';
+                if (device.last_seen) {
+                    const lastSeenDate = new Date(device.last_seen);
+                    const now = new Date();
+                    const diffMs = now - lastSeenDate;
+                    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                    const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+                    
+                    if (diffHours > 0) {
+                        lastSeenFormatted = `${diffHours}h ${diffMinutes}m trước`;
+                    } else if (diffMinutes > 0) {
+                        lastSeenFormatted = `${diffMinutes}m trước`;
+                    } else {
+                        lastSeenFormatted = 'Vừa xong';
+                    }
+                }
+                
                 row.innerHTML = `
-                    <td>${device.device_id || '-'}</td>
-                    <td>${device.device_name || '-'}</td>
-                    <td><span class="status-badge ${device.status === 'online' ? 'online' : 'offline'}">${device.status || 'offline'}</span></td>
-                    <td>${device.event_count || 0}</td>
-                    <td>${formatDateTime(device.last_seen)}</td>
+                    <td><strong>${device.id || '-'}</strong></td>
+                    <td>${device.name || '-'}</td>
+                    <td><span class="device-type ${deviceTypeClass}">${deviceType}</span></td>
+                    <td><span class="status-badge ${device.status === 'online' ? 'online' : 'offline'}">${device.status === 'online' ? 'Hoạt động' : 'Tắt'}</span></td>
+                    <td><strong>${device.totalEvents || 0}</strong></td>
+                    <td>${lastSeenFormatted}</td>
+                    <td>${offlineTime}</td>
+                    <td>
+                        <button class="action-btn refresh" onclick="refreshDevice('${device.id}')" title="Làm mới">🔄</button>
+                        <button class="action-btn details" onclick="showDeviceDetails('${device.id}')" title="Chi tiết">📋</button>
+                    </td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -1695,9 +1870,8 @@
         function formatDate(dateString) {
             if (!dateString) return '-';
             const date = new Date(dateString);
-            // Convert from UTC to Vietnam timezone (UTC+7)
-            const vietnamTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
-            return vietnamTime.toLocaleDateString('vi-VN', {
+            // Data from SQL Server is already in Vietnam timezone, no conversion needed
+            return date.toLocaleDateString('vi-VN', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric'
@@ -1707,9 +1881,8 @@
         function formatDateTime(dateString) {
             if (!dateString) return '-';
             const date = new Date(dateString);
-            // Convert from UTC to Vietnam timezone (UTC+7)
-            const vietnamTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
-            return vietnamTime.toLocaleString('vi-VN', {
+            // Data from SQL Server is already in Vietnam timezone, no conversion needed
+            return date.toLocaleString('vi-VN', {
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
