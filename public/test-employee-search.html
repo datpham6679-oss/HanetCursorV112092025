@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Employee Search</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 3px; }
+        button { padding: 10px 15px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Employee Search</h1>
+    
+    <div class="test-section">
+        <h3>1. Test API /attendance-data</h3>
+        <button onclick="testAttendanceData()">Test /attendance-data</button>
+        <div id="attendance-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>2. Test API /employees</h3>
+        <button onclick="testEmployees()">Test /employees</button>
+        <div id="employees-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>3. Test Employee Search</h3>
+        <input type="text" id="search-input" placeholder="Gõ tên nhân viên..." style="width: 300px;">
+        <button onclick="testSearch()">Test Search</button>
+        <div id="search-result" class="result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h3>4. Console Logs</h3>
+        <div id="console-logs" class="result" style="height: 200px; overflow-y: auto;"></div>
+    </div>
+
+    <script>
+        let allEmployeeData = [];
+        let allEmployees = [];
+        
+        // Override console.log to show in page
+        const originalLog = console.log;
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            const logsDiv = document.getElementById('console-logs');
+            logsDiv.innerHTML += '<div>' + args.join(' ') + '</div>';
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+        };
+        
+        async function testAttendanceData() {
+            try {
+                console.log('🔄 Testing /attendance-data...');
+                const response = await fetch('/attendance-data');
+                const data = await response.json();
+                
+                console.log('📊 Response status:', response.status);
+                console.log('📊 Data length:', data.length);
+                console.log('📊 First record:', data[0]);
+                
+                document.getElementById('attendance-result').innerHTML = `
+                    <strong>Status:</strong> ${response.status}<br>
+                    <strong>Records:</strong> ${data.length}<br>
+                    <strong>First Record:</strong> <pre>${JSON.stringify(data[0], null, 2)}</pre>
+                `;
+                
+                if (data.length > 0) {
+                    allEmployeeData = data;
+                    allEmployees = [...new Set(data.map(record => record.HoTen).filter(name => name))];
+                    console.log('👥 Unique employees:', allEmployees);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                document.getElementById('attendance-result').innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+        
+        async function testEmployees() {
+            try {
+                console.log('🔄 Testing /employees...');
+                const response = await fetch('/employees');
+                const data = await response.json();
+                
+                console.log('📊 Response status:', response.status);
+                console.log('📊 Data length:', data.length);
+                console.log('📊 First record:', data[0]);
+                
+                document.getElementById('employees-result').innerHTML = `
+                    <strong>Status:</strong> ${response.status}<br>
+                    <strong>Records:</strong> ${data.length}<br>
+                    <strong>First Record:</strong> <pre>${JSON.stringify(data[0], null, 2)}</pre>
+                `;
+                
+                if (data.length > 0) {
+                    allEmployeeData = data;
+                    allEmployees = [...new Set(data.map(record => record.HoTen).filter(name => name))];
+                    console.log('👥 Unique employees:', allEmployees);
+                }
+                
+            } catch (error) {
+                console.error('❌ Error:', error);
+                document.getElementById('employees-result').innerHTML = `<strong>Error:</strong> ${error.message}`;
+            }
+        }
+        
+        function testSearch() {
+            const query = document.getElementById('search-input').value.toLowerCase();
+            console.log('🔍 Search query:', query);
+            
+            if (query.length < 2) {
+                document.getElementById('search-result').innerHTML = 'Query too short (min 2 characters)';
+                return;
+            }
+            
+            const filtered = allEmployees.filter(emp => 
+                emp.toLowerCase().includes(query)
+            );
+            
+            console.log('📋 Filtered results:', filtered);
+            
+            let html = `<strong>Found ${filtered.length} results:</strong><br>`;
+            filtered.forEach(emp => {
+                const empData = allEmployeeData.find(data => data.HoTen === emp);
+                html += `<div style="margin: 5px 0; padding: 5px; background: white; border-radius: 3px;">
+                    <strong>${emp}</strong><br>
+                    <small>Mã: ${empData?.MaNhanVienNoiBo || 'N/A'}</small>
+                </div>`;
+            });
+            
+            document.getElementById('search-result').innerHTML = html;
+        }
+        
+        // Auto-load data on page load
+        window.onload = function() {
+            console.log('🚀 Page loaded, testing APIs...');
+            testAttendanceData();
+        };
+    </script>
+</body>
+</html>
