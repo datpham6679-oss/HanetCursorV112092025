@@ -2,6 +2,8 @@ import express from 'express';
 import qs from 'querystring';
 import ExcelJS from 'exceljs';
 import moment from 'moment-timezone';
+import fs from 'fs';
+import path from 'path';
 import { sql, poolPromise } from '../db.js';
 import * as helpers from '../helpers.js';
 
@@ -56,6 +58,133 @@ validateHanetConfig();
 // ========================================
 // END HANET CONFIGURATION
 // ========================================
+
+// API endpoint để lưu cấu hình Hanet
+router.post('/hanet-config', async (req, res) => {
+    try {
+        const { clientId, clientSecret, accessToken, refreshToken, webhookUrl } = req.body;
+        
+        // Validate required fields
+        if (!clientId || !clientSecret || !accessToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Client ID, Client Secret và Access Token là bắt buộc'
+            });
+        }
+        
+        // Update environment variables (in memory only for this session)
+        process.env.HANET_CLIENT_ID = clientId;
+        process.env.HANET_CLIENT_SECRET = clientSecret;
+        process.env.HANET_ACCESS_TOKEN = accessToken;
+        process.env.HANET_REFRESH_TOKEN = refreshToken || '';
+        process.env.WEBHOOK_URL = webhookUrl || 'http://192.168.11.114:1888/hanet-webhook';
+        
+        // Update HANET_CONFIG object
+        HANET_CONFIG.CLIENT_ID = clientId;
+        HANET_CONFIG.CLIENT_SECRET = clientSecret;
+        HANET_CONFIG.ACCESS_TOKEN = accessToken;
+        HANET_CONFIG.REFRESH_TOKEN = refreshToken || '';
+        HANET_CONFIG.WEBHOOK_URL = webhookUrl || 'http://192.168.11.114:1888/hanet-webhook';
+        
+        // Try to save to .env file
+        try {
+            const envPath = path.join(process.cwd(), '.env');
+            let envContent = '';
+            
+            // Read existing .env file if it exists
+            if (fs.existsSync(envPath)) {
+                envContent = fs.readFileSync(envPath, 'utf8');
+            }
+            
+            // Update or add Hanet configuration
+            const envLines = envContent.split('\n');
+            const newLines = [];
+            let hanetConfigFound = false;
+            
+            for (const line of envLines) {
+                if (line.startsWith('HANET_CLIENT_ID=') || 
+                    line.startsWith('HANET_CLIENT_SECRET=') || 
+                    line.startsWith('HANET_ACCESS_TOKEN=') || 
+                    line.startsWith('HANET_REFRESH_TOKEN=') || 
+                    line.startsWith('WEBHOOK_URL=')) {
+                    hanetConfigFound = true;
+                    continue; // Skip old values
+                }
+                newLines.push(line);
+            }
+            
+            // Add new Hanet configuration
+            if (!hanetConfigFound) {
+                newLines.push('\n# Hanet Configuration');
+            }
+            newLines.push(`HANET_CLIENT_ID=${clientId}`);
+            newLines.push(`HANET_CLIENT_SECRET=${clientSecret}`);
+            newLines.push(`HANET_ACCESS_TOKEN=${accessToken}`);
+            newLines.push(`HANET_REFRESH_TOKEN=${refreshToken || ''}`);
+            newLines.push(`WEBHOOK_URL=${webhookUrl || 'http://192.168.11.114:1888/hanet-webhook'}`);
+            
+            fs.writeFileSync(envPath, newLines.join('\n'));
+            console.log('✅ Cấu hình Hanet đã được lưu vào file .env');
+        } catch (envError) {
+            console.warn('⚠️ Không thể lưu vào file .env:', envError.message);
+        }
+        
+        console.log('✅ Cấu hình Hanet đã được cập nhật');
+        
+        res.json({
+            success: true,
+            message: 'Cấu hình Hanet đã được lưu thành công',
+            config: {
+                clientId: clientId,
+                clientSecret: '***hidden***',
+                accessToken: '***hidden***',
+                refreshToken: refreshToken ? '***hidden***' : 'not_set',
+                webhookUrl: webhookUrl || 'http://192.168.11.114:1888/hanet-webhook',
+                isValid: true
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi lưu cấu hình Hanet:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi lưu cấu hình Hanet',
+            error: error.message
+        });
+    }
+});
+
+// API endpoint để xóa cấu hình Hanet
+router.delete('/hanet-config', async (req, res) => {
+    try {
+        // Reset to default values
+        process.env.HANET_CLIENT_ID = 'your_client_id_here';
+        process.env.HANET_CLIENT_SECRET = 'your_client_secret_here';
+        process.env.HANET_ACCESS_TOKEN = 'your_access_token_here';
+        process.env.HANET_REFRESH_TOKEN = 'your_refresh_token_here';
+        process.env.WEBHOOK_URL = 'http://192.168.11.114:1888/hanet-webhook';
+        
+        // Reset HANET_CONFIG object
+        HANET_CONFIG.CLIENT_ID = 'your_client_id_here';
+        HANET_CONFIG.CLIENT_SECRET = 'your_client_secret_here';
+        HANET_CONFIG.ACCESS_TOKEN = 'your_access_token_here';
+        HANET_CONFIG.REFRESH_TOKEN = 'your_refresh_token_here';
+        HANET_CONFIG.WEBHOOK_URL = 'http://192.168.11.114:1888/hanet-webhook';
+        
+        console.log('🗑️ Cấu hình Hanet đã được xóa');
+        
+        res.json({
+            success: true,
+            message: 'Cấu hình Hanet đã được xóa thành công'
+        });
+    } catch (error) {
+        console.error('Lỗi xóa cấu hình Hanet:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi xóa cấu hình Hanet',
+            error: error.message
+        });
+    }
+});
 
 // API endpoint để kiểm tra cấu hình Hanet
 router.get('/hanet-config', (req, res) => {
