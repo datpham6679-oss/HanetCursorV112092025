@@ -63,7 +63,29 @@ HanetCursorV112092025/
 
 ## 📈 Changelog
 
-### Version 1.1 - Automatic Attendance Calculation (Latest)
+### Version 1.2 - Enhanced Shift Logic & Documentation (Latest)
+**Ngày:** 14/09/2025
+
+#### **🔄 Major Features:**
+- **Stricter Shift Validation**: Logic nghiêm ngặt cho ca làm việc
+- **Comprehensive Documentation**: Tài liệu kiến trúc chi tiết
+- **Test Data Management**: Quản lý dữ liệu test và cleanup
+- **System Architecture**: Documentation đầy đủ từ server đến web
+
+#### **🆕 New Components:**
+- **`SYSTEM_ARCHITECTURE.md`**: Tài liệu kiến trúc hệ thống chi tiết
+- **Enhanced SP Logic**: Cải thiện stored procedure với điều kiện nghiêm ngặt
+- **Test Data Framework**: Hệ thống tạo và quản lý dữ liệu test
+- **Cleanup Operations**: Công cụ xóa dữ liệu không cần thiết
+
+#### **✨ Improvements:**
+- ✅ **Shift Logic**: Logic ca làm việc nghiêm ngặt hơn
+- ✅ **Documentation**: Tài liệu đầy đủ và chi tiết
+- ✅ **Data Management**: Quản lý dữ liệu test tốt hơn
+- ✅ **System Understanding**: Hiểu rõ kiến trúc hệ thống
+- ✅ **Maintenance**: Dễ dàng bảo trì và phát triển
+
+### Version 1.1 - Automatic Attendance Calculation
 **Ngày:** 12/09/2025
 
 #### **🔄 Major Features:**
@@ -279,7 +301,8 @@ Hệ thống hỗ trợ xuất báo cáo Excel với các định dạng:
 ## 🏷️ Tags & Releases
 
 - **v1.0-phase1**: Phiên bản đầu tiên với tính năng cơ bản
-- **v1.1-auto-attendance**: Phiên bản tự động tính toán (Latest)
+- **v1.1-auto-attendance**: Phiên bản tự động tính toán
+- **v1.2-enhanced-logic**: Phiên bản logic nghiêm ngặt và tài liệu chi tiết (Latest)
 
 ## 👥 Đóng góp
 
