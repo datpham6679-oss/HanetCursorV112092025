@@ -369,7 +369,7 @@
                                 <th>Giờ ra</th>
                                 <th>Thời gian làm việc</th>
                                 <th>Ca làm việc</th>
-                                <th>Trạng thái</th>
+                                <th>Thiết bị</th>
                             </tr>
                         </thead>
                         <tbody id="table-body">
@@ -471,9 +471,9 @@
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
                         <!-- Employee Name Search -->
                         <div>
-                            <label>Tìm theo tên nhân viên:</label>
+                            <label>Tìm kiếm nhân viên:</label>
                             <div style="position: relative;">
-                                <input type="text" id="employee-name-search" class="form-input" placeholder="Gõ tên nhân viên..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <input type="text" id="employee-name-search" class="form-input" placeholder="🔍 Tìm theo tên, mã, phòng ban, chức vụ..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                                 <div id="employee-name-dropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none;">
                                 </div>
                             </div>
@@ -481,9 +481,9 @@
                         
                         <!-- Employee ID Search -->
                         <div>
-                            <label>Tìm theo mã nhân viên nội bộ:</label>
+                            <label>Tìm kiếm theo mã:</label>
                             <div style="position: relative;">
-                                <input type="text" id="employee-id-search" class="form-input" placeholder="Gõ mã nhân viên..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                                <input type="text" id="employee-id-search" class="form-input" placeholder="🔍 Tìm theo mã nội bộ, mã HANET..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                                 <div id="employee-id-dropdown" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ddd; border-top: none; border-radius: 0 0 4px 4px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none;">
                                 </div>
                             </div>
@@ -550,7 +550,7 @@
                 
                 <!-- Check-in/Check-out Timeline -->
                 <div id="employee-timeline" class="table-container" style="display: none;">
-                    <h3>⏰ Chi tiết Check-in/Check-out (Thời gian muộn nhất lên đầu)</h3>
+                    <h3>⏰ Chi tiết Check-in/Check-out</h3>
                     <div style="margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <div>
@@ -564,11 +564,11 @@
                     <table class="table">
                         <thead>
                             <tr>
-                                <th style="width: 20%;">Thời gian</th>
+                                <th style="width: 15%;">Ngày</th>
+                                <th style="width: 15%;">Giờ</th>
                                 <th style="width: 15%;">Loại</th>
-                                <th style="width: 25%;">Thiết bị</th>
-                                <th style="width: 25%;">Địa điểm</th>
-                                <th style="width: 15%;">Trạng thái</th>
+                                <th style="width: 30%;">Thiết bị</th>
+                                <th style="width: 25%;">Trạng thái</th>
                             </tr>
                         </thead>
                         <tbody id="timeline-body">
@@ -655,14 +655,25 @@
                 <!-- Employee List -->
                 <div class="employee-table">
                     <h3>📋 Danh sách nhân viên</h3>
+                    
+                    <!-- Search Box -->
+                    <div class="search-container" style="margin-bottom: 20px;">
+                        <div style="position: relative; max-width: 400px;">
+                            <input type="text" id="employee-search" placeholder="🔍 Tìm kiếm nhân viên theo tên, mã nội bộ, mã HANET..." 
+                                   style="width: 100%; padding: 12px 40px 12px 16px; border: 2px solid #ddd; border-radius: 25px; font-size: 14px; outline: none; transition: border-color 0.3s;">
+                            <button type="button" onclick="clearEmployeeSearch()" 
+                                    style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); background: none; border: none; font-size: 18px; cursor: pointer; color: #999; padding: 4px;">
+                                ✕
+                            </button>
+                        </div>
+                        <div id="search-results-count" style="margin-top: 8px; font-size: 12px; color: #666;"></div>
+                    </div>
                     <div class="table-container">
                         <table class="table" id="employee-table">
                             <thead>
                                 <tr>
                                     <th>Họ tên</th>
-                                    <th>Giới tính</th>
-                                    <th>Ngày sinh</th>
-                                    <th>Số điện thoại</th>
+                                    <th>Năm sinh</th>
                                     <th>Phòng ban</th>
                                     <th>Chức vụ</th>
                                     <th>Ca làm việc</th>
@@ -673,7 +684,7 @@
                             </thead>
                             <tbody id="employee-table-body">
                                 <tr>
-                                    <td colspan="10" style="text-align: center; padding: 20px; color: #666;">
+                                    <td colspan="8" style="text-align: center; padding: 20px; color: #666;">
                                         <div class="loading-spinner"></div> Đang tải dữ liệu...
                                     </td>
                                 </tr>
@@ -687,63 +698,6 @@
             <div id="tab-reports" class="tab-content">
                 <h2>📄 Báo cáo</h2>
                 
-                <!-- Report Filters -->
-                <div class="report-filters" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                    <h3>🔍 Lọc dữ liệu</h3>
-                    
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                        <!-- Date Range -->
-                        <div>
-                            <label>Từ ngày (DD/MM/YYYY):</label>
-                            <div class="calendar-widget">
-                                <input type="text" id="from-date" class="calendar-input" placeholder="DD/MM/YYYY" readonly>
-                                <span class="calendar-icon" onclick="toggleCalendar('from-calendar')">📅</span>
-                                <div id="from-calendar" class="calendar-popup"></div>
-                            </div>
-                        </div>
-                        <div>
-                            <label>Đến ngày (DD/MM/YYYY):</label>
-                            <div class="calendar-widget">
-                                <input type="text" id="to-date" class="calendar-input" placeholder="DD/MM/YYYY" readonly>
-                                <span class="calendar-icon" onclick="toggleCalendar('to-calendar')">📅</span>
-                                <div id="to-calendar" class="calendar-popup"></div>
-                            </div>
-                        </div>
-                        
-                        <!-- Department -->
-                        <div>
-                            <label>Phòng ban:</label>
-                            <select id="department-filter" class="form-input" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                <option value="">Tất cả phòng ban</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Employee -->
-                        <div>
-                            <label>Nhân viên:</label>
-                            <select id="employee-filter" class="form-input" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                <option value="">Tất cả nhân viên</option>
-                            </select>
-                        </div>
-                        
-                        <!-- Status -->
-                        <div>
-                            <label>Trạng thái:</label>
-                            <select id="status-filter" class="form-input" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
-                                <option value="">Tất cả trạng thái</option>
-                                <option value="Đúng giờ">Đúng giờ</option>
-                                <option value="Đi trễ">Đi trễ</option>
-                                <option value="Về sớm">Về sớm</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
-                        <button class="btn" onclick="loadReportData()">🔍 Lọc dữ liệu</button>
-                        <button class="btn" onclick="clearFilters()">🗑️ Xóa bộ lọc</button>
-                    </div>
-                </div>
-                
                 <!-- Report Actions -->
                 <div class="report-actions" style="background: white; padding: 20px; border-radius: 10px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                     <h3>📊 Xuất báo cáo</h3>
@@ -753,37 +707,55 @@
                         <div class="report-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center;">
                             <h4>📋 Báo cáo tổng hợp</h4>
                             <p>Xuất tất cả dữ liệu chấm công</p>
-                            <button class="btn" onclick="exportReport('all')">📊 Xuất tất cả</button>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button class="btn" onclick="viewReport('all')">👁️ Xem</button>
+                                <button class="btn" onclick="exportReport('all')">📊 Xuất</button>
+                            </div>
                         </div>
                         
                         <div class="report-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center;">
                             <h4>📅 Báo cáo theo tháng</h4>
                             <p>Xuất dữ liệu theo tháng hiện tại</p>
-                            <button class="btn" onclick="exportReport('monthly')">📅 Xuất tháng</button>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button class="btn" onclick="viewReport('monthly')">👁️ Xem</button>
+                                <button class="btn" onclick="exportReport('monthly')">📅 Xuất</button>
+                            </div>
                         </div>
                         
                         <div class="report-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center;">
                             <h4>🏢 Báo cáo theo phòng ban</h4>
                             <p>Xuất dữ liệu theo phòng ban</p>
-                            <button class="btn" onclick="exportReport('department')">🏢 Xuất phòng ban</button>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button class="btn" onclick="viewReport('department')">👁️ Xem</button>
+                                <button class="btn" onclick="exportReport('department')">🏢 Xuất</button>
+                            </div>
                         </div>
                         
                         <div class="report-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center;">
                             <h4>👤 Báo cáo theo nhân viên</h4>
                             <p>Xuất dữ liệu theo nhân viên</p>
-                            <button class="btn" onclick="exportReport('employee')">👤 Xuất nhân viên</button>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button class="btn" onclick="openEmployeeReportModal('view')">👁️ Xem</button>
+                                <button class="btn" onclick="openEmployeeReportModal('export')">👤 Xuất</button>
+                            </div>
                         </div>
                         
                         <div class="report-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center;">
                             <h4>📊 Báo cáo theo trạng thái</h4>
                             <p>Xuất dữ liệu theo trạng thái</p>
-                            <button class="btn" onclick="exportReport('status')">📊 Xuất trạng thái</button>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button class="btn" onclick="viewReport('status')">👁️ Xem</button>
+                                <button class="btn" onclick="exportReport('status')">📊 Xuất</button>
+                            </div>
                         </div>
                         
                         <div class="report-card" style="border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center;">
                             <h4>📈 Báo cáo thống kê</h4>
                             <p>Xuất báo cáo thống kê tổng hợp</p>
-                            <button class="btn" onclick="exportReport('statistics')">📈 Xuất thống kê</button>
+                            <div style="display: flex; gap: 10px; justify-content: center;">
+                                <button class="btn" onclick="viewReport('statistics')">👁️ Xem</button>
+                                <button class="btn" onclick="exportReport('statistics')">📈 Xuất</button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -890,6 +862,62 @@
         </div>
     </div>
 
+    <!-- Employee Report Modal -->
+    <div id="employeeReportModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>👤 Chọn nhân viên cho báo cáo</h3>
+                <span class="close" onclick="closeEmployeeReportModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom: 20px;">
+                    <label>Tìm kiếm nhân viên:</label>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <div style="flex: 1;">
+                            <input type="text" id="modal-employee-name-search" class="form-input" placeholder="Nhập tên nhân viên..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                        <div style="flex: 1;">
+                            <input type="text" id="modal-employee-code-search" class="form-input" placeholder="Nhập mã nhân viên..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                        </div>
+                    </div>
+                    <div id="modal-employee-search-results" style="margin-top: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; border-radius: 4px; background: white; display: none;">
+                    </div>
+                </div>
+                
+                <div id="modal-selected-employee-display" style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; min-height: 50px; display: none;">
+                    <span style="color: #666;">Chưa chọn nhân viên</span>
+                </div>
+                
+                <div style="margin-bottom: 20px;">
+                    <label>Khoảng thời gian:</label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 10px;">
+                        <div>
+                            <label>Từ ngày (DD/MM/YYYY):</label>
+                            <div class="calendar-widget">
+                                <input type="text" id="modal-from-date" class="calendar-input" placeholder="DD/MM/YYYY" readonly>
+                                <span class="calendar-icon" onclick="toggleModalCalendar('modal-from-calendar')">📅</span>
+                                <div id="modal-from-calendar" class="calendar-popup"></div>
+                            </div>
+                        </div>
+                        <div>
+                            <label>Đến ngày (DD/MM/YYYY):</label>
+                            <div class="calendar-widget">
+                                <input type="text" id="modal-to-date" class="calendar-input" placeholder="DD/MM/YYYY" readonly>
+                                <span class="calendar-icon" onclick="toggleModalCalendar('modal-to-calendar')">📅</span>
+                                <div id="modal-to-calendar" class="calendar-popup"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" id="modal-confirm-btn" onclick="confirmEmployeeReport()" disabled>👁️ Xem báo cáo</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeEmployeeReportModal()">❌ Hủy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Global variables
         let currentData = [];
@@ -908,6 +936,14 @@
             
             loadData();
             
+            // Auto-refresh dashboard data every 30 seconds
+            setInterval(() => {
+                if (currentTab === 'dashboard') {
+                    console.log('🔄 Auto-refreshing dashboard data...');
+                    loadData();
+                }
+            }, 30000); // 30 seconds
+            
             // Setup date input formatting
             const dateInputs = ['detail-date', 'from-date', 'to-date'];
             dateInputs.forEach(id => {
@@ -916,6 +952,17 @@
                     input.addEventListener('input', (e) => formatDateInput(e.target));
                 }
             });
+            
+            // Setup employee search
+            const employeeSearchInput = document.getElementById('employee-search');
+            if (employeeSearchInput) {
+                employeeSearchInput.addEventListener('input', searchEmployees);
+                employeeSearchInput.addEventListener('keyup', (e) => {
+                    if (e.key === 'Enter') {
+                        searchEmployees();
+                    }
+                });
+            }
         });
 
         // Tab switching
@@ -1064,18 +1111,18 @@
             tableBody.innerHTML = '';
             
             data.forEach(record => {
-                // Convert status to display format
-                let displayStatus = record.TrangThai || 'Chưa xử lý';
-                if (displayStatus.includes('Dung gio')) {
-                    displayStatus = 'Đúng giờ';
-                } else if (displayStatus.includes('Di tre')) {
-                    displayStatus = 'Đi trễ';
-                } else if (displayStatus.includes('Ve som')) {
-                    displayStatus = 'Về sớm';
-                }
-                
                 // Format shift information
                 let shiftInfo = record.CaLamViec || record.Ca || '-';
+                
+                // Format device information
+                let deviceInfo = '-';
+                if (record.DiaDiemVao && record.DiaDiemRa) {
+                    deviceInfo = `${record.DiaDiemVao} → ${record.DiaDiemRa}`;
+                } else if (record.DiaDiemVao) {
+                    deviceInfo = record.DiaDiemVao;
+                } else if (record.DiaDiemRa) {
+                    deviceInfo = record.DiaDiemRa;
+                }
                 
                 const row = document.createElement('tr');
                 row.innerHTML = `
@@ -1086,7 +1133,7 @@
                     <td>${formatDateTime(record.GioRa)}</td>
                     <td>${record.ThoiGianLamViec || 0}h</td>
                     <td>${shiftInfo}</td>
-                    <td><span class="status-badge ${getStatusClass(record.TrangThai)}">${displayStatus}</span></td>
+                    <td><span class="device-info">${deviceInfo}</span></td>
                 `;
                 tableBody.appendChild(row);
             });
@@ -1313,82 +1360,6 @@
             });
         }
 
-        // Load report data with filters
-        async function loadReportData() {
-            const statusDiv = document.getElementById('reports-status');
-            const previewDiv = document.getElementById('report-preview');
-            
-            try {
-                statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang lọc dữ liệu...';
-                statusDiv.className = 'status loading';
-                
-                // Get filter values
-                const filters = getReportFilters();
-                
-                // Build query string
-                const queryParams = new URLSearchParams();
-                Object.keys(filters).forEach(key => {
-                    if (filters[key]) {
-                        queryParams.append(key, filters[key]);
-                    }
-                });
-                
-                const response = await fetch(`/attendance-data?${queryParams.toString()}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('📊 Dữ liệu báo cáo:', data);
-                
-                if (data && data.length > 0) {
-                    updateReportPreview(data);
-                    statusDiv.innerHTML = `✅ Đã lọc được ${data.length} bản ghi`;
-                    statusDiv.className = 'status success';
-                    previewDiv.style.display = 'block';
-                } else {
-                    statusDiv.innerHTML = '⚠️ Không có dữ liệu phù hợp với bộ lọc';
-                    statusDiv.className = 'status error';
-                    previewDiv.style.display = 'none';
-                }
-                
-            } catch (error) {
-                console.error('❌ Lỗi lọc dữ liệu:', error);
-                statusDiv.innerHTML = `❌ Lỗi: ${error.message}`;
-                statusDiv.className = 'status error';
-                previewDiv.style.display = 'none';
-            }
-        }
-
-        // Get report filters
-        function getReportFilters() {
-            const fromDate = convertDateToAPI(document.getElementById('from-date').value);
-            const toDate = convertDateToAPI(document.getElementById('to-date').value);
-            
-            return {
-                startDate: fromDate,
-                endDate: toDate,
-                department: document.getElementById('department-filter').value,
-                personId: document.getElementById('employee-filter').value,
-                status: document.getElementById('status-filter').value
-            };
-        }
-
-        // Clear filters
-        function clearFilters() {
-            document.getElementById('from-date').value = '';
-            document.getElementById('to-date').value = '';
-            document.getElementById('department-filter').value = '';
-            document.getElementById('employee-filter').value = '';
-            document.getElementById('status-filter').value = '';
-            
-            const statusDiv = document.getElementById('reports-status');
-            statusDiv.innerHTML = '🗑️ Đã xóa tất cả bộ lọc';
-            statusDiv.className = 'status success';
-            
-            document.getElementById('report-preview').style.display = 'none';
-        }
-
         // Update report preview
         function updateReportPreview(data) {
             const tableBody = document.getElementById('report-preview-body');
@@ -1417,17 +1388,9 @@
                 statusDiv.innerHTML = `<span class="loading-spinner"></span> Đang xuất báo cáo ${type}...`;
                 statusDiv.className = 'status loading';
                 
-                // Get filter values
-                const filters = getReportFilters();
-                
                 // Build query string
                 const queryParams = new URLSearchParams();
                 queryParams.append('type', type);
-                Object.keys(filters).forEach(key => {
-                    if (filters[key]) {
-                        queryParams.append(key, filters[key]);
-                    }
-                });
                 
                 const response = await fetch(`/export/report?${queryParams.toString()}`);
                 if (!response.ok) {
@@ -1454,39 +1417,50 @@
             }
         }
 
-        // Load departments and employees for filters
-        async function loadReportFilters() {
+        // View report preview by type
+        async function viewReport(type) {
+            const statusDiv = document.getElementById('reports-status');
+            const previewDiv = document.getElementById('report-preview');
+            
             try {
-                // Load departments
-                const deptResponse = await fetch('/departments');
-                if (deptResponse.ok) {
-                    const departments = await deptResponse.json();
-                    const deptSelect = document.getElementById('department-filter');
-                    departments.forEach(dept => {
-                        const option = document.createElement('option');
-                        option.value = dept;
-                        option.textContent = dept;
-                        deptSelect.appendChild(option);
-                    });
+                statusDiv.innerHTML = `<span class="loading-spinner"></span> Đang tải dữ liệu báo cáo ${type}...`;
+                statusDiv.className = 'status loading';
+                
+                // Build query string for viewing (no export type)
+                const queryParams = new URLSearchParams();
+                queryParams.append('type', type);
+                
+                const response = await fetch(`/attendance-data?${queryParams.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
                 
-                // Load employees
-                const empResponse = await fetch('/attendance-data');
-                if (empResponse.ok) {
-                    const data = await empResponse.json();
-                    const empSelect = document.getElementById('employee-filter');
-                    const employees = [...new Set(data.map(record => record.TenNhanVien || record.HoTen).filter(name => name))];
-                    employees.forEach(emp => {
-                        const option = document.createElement('option');
-                        option.value = emp;
-                        option.textContent = emp;
-                        empSelect.appendChild(option);
-                    });
+                const data = await response.json();
+                console.log(`📊 Dữ liệu báo cáo ${type}:`, data);
+                
+                if (data && data.length > 0) {
+                    updateReportPreview(data);
+                    statusDiv.innerHTML = `✅ Đã tải ${data.length} bản ghi cho báo cáo ${type}`;
+                    statusDiv.className = 'status success';
+                    previewDiv.style.display = 'block';
+                } else {
+                    statusDiv.innerHTML = `⚠️ Không có dữ liệu cho báo cáo ${type}`;
+                    statusDiv.className = 'status warning';
+                    previewDiv.style.display = 'none';
                 }
                 
             } catch (error) {
-                console.error('❌ Lỗi tải bộ lọc:', error);
+                console.error(`❌ Lỗi tải báo cáo ${type}:`, error);
+                statusDiv.innerHTML = `❌ Lỗi tải báo cáo ${type}: ${error.message}`;
+                statusDiv.className = 'status error';
+                previewDiv.style.display = 'none';
             }
+        }
+
+        // Load departments and employees for filters
+        async function loadReportFilters() {
+            // Simplified function since filters are removed
+            console.log('📊 Report filters loaded (simplified)');
         }
 
         // Global employee list
@@ -1499,8 +1473,28 @@
                 console.log('🔄 Loading employee list for detail view...');
                 console.log('🔄 Current tab:', document.querySelector('.tab.active')?.textContent);
                 
-                // Try /attendance-data first
-                let response = await fetch('/attendance-data');
+                // Try /employees first (more reliable for employee data)
+                let response = await fetch('/employees');
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('📊 Employee data received from /employees:', data.length, 'records');
+                    console.log('📊 Sample data:', data[0]);
+                    
+                    if (data.length > 0) {
+                        allEmployeeData = data; // Store full employee data
+                        allEmployees = [...new Set(data.map(record => record.HoTen).filter(name => name))];
+                        console.log('👥 Unique employees:', allEmployees);
+                        console.log('📊 Full employee data:', allEmployeeData);
+                        
+                        // Setup autocomplete
+                        setupEmployeeAutocomplete();
+                        return;
+                    }
+                }
+                
+                // Fallback to /attendance-data if /employees is empty
+                console.log('🔄 Fallback to /attendance-data API...');
+                response = await fetch('/attendance-data');
                 if (response.ok) {
                     const data = await response.json();
                     console.log('📊 Employee data received from /attendance-data:', data.length, 'records');
@@ -1516,23 +1510,6 @@
                         setupEmployeeAutocomplete();
                         return;
                     }
-                }
-                
-                // Fallback to /employees if /attendance-data is empty
-                console.log('🔄 Fallback to /employees API...');
-                response = await fetch('/employees');
-                if (response.ok) {
-                    const data = await response.json();
-                    console.log('📊 Employee data received from /employees:', data.length, 'records');
-                    console.log('📊 Sample data:', data[0]);
-                    
-                    allEmployeeData = data; // Store full employee data
-                    allEmployees = [...new Set(data.map(record => record.HoTen).filter(name => name))];
-                    console.log('👥 Unique employees:', allEmployees);
-                    console.log('📊 Full employee data:', allEmployeeData);
-                    
-                    // Setup autocomplete
-                    setupEmployeeAutocomplete();
                 } else {
                     console.error('❌ Failed to fetch employee data from both APIs:', response.status);
                 }
@@ -1553,21 +1530,32 @@
             
             console.log('🔧 Setting up enhanced autocomplete');
             
-            // Employee name search
+            // Employee name search (enhanced)
             nameSearchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                console.log('🔍 Name search query:', query);
+                const query = e.target.value.toLowerCase().trim();
+                console.log('🔍 Enhanced name search query:', query);
                 
-                if (query.length < 2) {
+                if (query.length < 1) {
                     nameDropdown.style.display = 'none';
                     return;
                 }
                 
-                const filteredEmployees = allEmployees.filter(emp => 
-                    emp.toLowerCase().includes(query)
-                );
+                // Enhanced search across multiple fields
+                const filteredEmployees = allEmployeeData.filter(emp => {
+                    const hoTen = (emp.HoTen || '').toLowerCase();
+                    const maNhanVienNoiBo = (emp.MaNhanVienNoiBo || '').toLowerCase();
+                    const maNhanVienHANET = (emp.MaNhanVienHANET || '').toLowerCase();
+                    const phongBan = (emp.PhongBan || '').toLowerCase();
+                    const chucVu = (emp.ChucVu || '').toLowerCase();
+                    
+                    return hoTen.includes(query) || 
+                           maNhanVienNoiBo.includes(query) || 
+                           maNhanVienHANET.includes(query) ||
+                           phongBan.includes(query) ||
+                           chucVu.includes(query);
+                });
                 
-                console.log('📋 Filtered employees by name:', filteredEmployees);
+                console.log('📋 Enhanced filtered employees:', filteredEmployees);
                 
                 if (filteredEmployees.length > 0) {
                     nameDropdown.innerHTML = '';
@@ -1576,11 +1564,20 @@
                         item.style.padding = '8px 12px';
                         item.style.cursor = 'pointer';
                         item.style.borderBottom = '1px solid #eee';
-                        item.textContent = emp;
+                        item.innerHTML = `
+                            <div style="font-weight: bold;">${emp.HoTen || 'N/A'}</div>
+                            <div style="font-size: 0.85em; color: #666;">
+                                Mã nội bộ: ${emp.MaNhanVienNoiBo || 'N/A'} | 
+                                Mã HANET: ${emp.MaNhanVienHANET || 'N/A'}
+                            </div>
+                            <div style="font-size: 0.8em; color: #999;">
+                                ${emp.PhongBan || ''} ${emp.ChucVu ? ' - ' + emp.ChucVu : ''}
+                            </div>
+                        `;
                         item.addEventListener('click', () => {
-                            console.log('👤 Employee selected by name:', emp);
-                            selectEmployee(emp, 'name');
-                            nameSearchInput.value = emp;
+                            console.log('👤 Employee selected by enhanced search:', emp.HoTen);
+                            selectEmployee(emp.HoTen, 'name');
+                            nameSearchInput.value = emp.HoTen;
                             nameDropdown.style.display = 'none';
                         });
                         item.addEventListener('mouseenter', () => {
@@ -1597,47 +1594,67 @@
                 }
             });
             
-            // Employee ID search
+            // Employee ID search (enhanced)
             idSearchInput.addEventListener('input', (e) => {
-                const query = e.target.value.toLowerCase();
-                console.log('🔍 ID search query:', query);
+                const query = e.target.value.toLowerCase().trim();
+                console.log('🔍 Enhanced ID search query:', query);
+                console.log('📊 All employee data length:', allEmployeeData.length);
+                console.log('📊 Sample employee data:', allEmployeeData[0]);
                 
                 if (query.length < 1) {
                     idDropdown.style.display = 'none';
                     return;
                 }
                 
-                const filteredEmployees = allEmployees.filter(emp => {
-                    // Find employee data to get ID
-                    const empData = allEmployeeData.find(data => 
-                        data.HoTen === emp
-                    );
-                    if (empData && empData.MaNhanVienNoiBo) {
-                        return empData.MaNhanVienNoiBo.toLowerCase().includes(query);
+                // Enhanced search across multiple fields
+                const filteredEmployees = allEmployeeData.filter(emp => {
+                    const hoTen = (emp.HoTen || '').toLowerCase();
+                    const maNhanVienNoiBo = (emp.MaNhanVienNoiBo || '').toLowerCase();
+                    const maNhanVienHANET = (emp.MaNhanVienHANET || '').toLowerCase();
+                    const phongBan = (emp.PhongBan || '').toLowerCase();
+                    const chucVu = (emp.ChucVu || '').toLowerCase();
+                    
+                    const matches = hoTen.includes(query) || 
+                           maNhanVienNoiBo.includes(query) || 
+                           maNhanVienHANET.includes(query) ||
+                           phongBan.includes(query) ||
+                           chucVu.includes(query);
+                    
+                    if (matches) {
+                        console.log('✅ Match found:', {
+                            HoTen: emp.HoTen,
+                            MaNhanVienNoiBo: emp.MaNhanVienNoiBo,
+                            MaNhanVienHANET: emp.MaNhanVienHANET,
+                            query: query
+                        });
                     }
-                    return false;
+                    
+                    return matches;
                 });
                 
-                console.log('📋 Filtered employees by ID:', filteredEmployees);
+                console.log('📋 Enhanced filtered employees by ID:', filteredEmployees);
                 
                 if (filteredEmployees.length > 0) {
                     idDropdown.innerHTML = '';
                     filteredEmployees.forEach(emp => {
-                        const empData = allEmployeeData.find(data => 
-                            data.HoTen === emp
-                        );
                         const item = document.createElement('div');
                         item.style.padding = '8px 12px';
                         item.style.cursor = 'pointer';
                         item.style.borderBottom = '1px solid #eee';
                         item.innerHTML = `
-                            <div style="font-weight: bold;">${emp}</div>
-                            <div style="font-size: 0.9em; color: #666;">Mã: ${empData?.MaNhanVienNoiBo || 'N/A'}</div>
+                            <div style="font-weight: bold;">${emp.HoTen || 'N/A'}</div>
+                            <div style="font-size: 0.85em; color: #666;">
+                                Mã nội bộ: ${emp.MaNhanVienNoiBo || 'N/A'} | 
+                                Mã HANET: ${emp.MaNhanVienHANET || 'N/A'}
+                            </div>
+                            <div style="font-size: 0.8em; color: #999;">
+                                ${emp.PhongBan || ''} ${emp.ChucVu ? ' - ' + emp.ChucVu : ''}
+                            </div>
                         `;
                         item.addEventListener('click', () => {
-                            console.log('👤 Employee selected by ID:', emp);
-                            selectEmployee(emp, 'id');
-                            idSearchInput.value = empData?.MaNhanVienNoiBo || '';
+                            console.log('👤 Employee selected by enhanced ID search:', emp.HoTen);
+                            selectEmployee(emp.HoTen, 'id');
+                            idSearchInput.value = emp.MaNhanVienNoiBo || emp.MaNhanVienHANET || '';
                             idDropdown.style.display = 'none';
                         });
                         item.addEventListener('mouseenter', () => {
@@ -1715,6 +1732,576 @@
             });
         }
 
+        // Setup employee search for reports tab
+        function setupReportsEmployeeSearch() {
+            const nameSearchInput = document.getElementById('employee-name-search');
+            const codeSearchInput = document.getElementById('employee-code-search');
+            const searchResults = document.getElementById('employee-search-results');
+            const selectedDisplay = document.getElementById('selected-employee-display-reports');
+            const selectedIdInput = document.getElementById('selected-employee-id-reports');
+            const selectedNameInput = document.getElementById('selected-employee-name-reports');
+            
+            console.log('🔧 Setting up reports employee search');
+            
+            // Function to perform search
+            function performSearch(query, searchType) {
+                if (!query || query.length < 1) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                
+                const filteredEmployees = allEmployeeData.filter(emp => {
+                    if (searchType === 'name') {
+                        const hoTen = (emp.HoTen || '').toLowerCase();
+                        const phongBan = (emp.PhongBan || '').toLowerCase();
+                        const chucVu = (emp.ChucVu || '').toLowerCase();
+                        return hoTen.includes(query) || phongBan.includes(query) || chucVu.includes(query);
+                    } else if (searchType === 'code') {
+                        const maNhanVienNoiBo = (emp.MaNhanVienNoiBo || '').toLowerCase();
+                        const maNhanVienHANET = (emp.MaNhanVienHANET || '').toLowerCase();
+                        return maNhanVienNoiBo.includes(query) || maNhanVienHANET.includes(query);
+                    }
+                    return false;
+                });
+                
+                if (filteredEmployees.length > 0) {
+                    searchResults.innerHTML = '';
+                    filteredEmployees.forEach(emp => {
+                        const item = document.createElement('div');
+                        item.style.padding = '10px';
+                        item.style.cursor = 'pointer';
+                        item.style.borderBottom = '1px solid #eee';
+                        item.innerHTML = `
+                            <div style="font-weight: bold;">${emp.HoTen || 'N/A'}</div>
+                            <div style="font-size: 0.85em; color: #666;">
+                                Mã nội bộ: ${emp.MaNhanVienNoiBo || 'N/A'} | 
+                                Mã HANET: ${emp.MaNhanVienHANET || 'N/A'} |
+                                Phòng ban: ${emp.PhongBan || 'N/A'}
+                            </div>
+                        `;
+                        
+                        item.addEventListener('click', () => {
+                            selectedIdInput.value = emp.MaNhanVienNoiBo || emp.MaNhanVienHANET || '';
+                            selectedNameInput.value = emp.HoTen || '';
+                            selectedDisplay.innerHTML = `
+                                <strong>${emp.HoTen || 'N/A'}</strong><br>
+                                <small style="color: #666;">
+                                    Mã nội bộ: ${emp.MaNhanVienNoiBo || 'N/A'} | 
+                                    Mã HANET: ${emp.MaNhanVienHANET || 'N/A'}
+                                </small>
+                            `;
+                            selectedDisplay.style.display = 'block';
+                            searchResults.style.display = 'none';
+                            nameSearchInput.value = '';
+                            codeSearchInput.value = '';
+                        });
+                        
+                        searchResults.appendChild(item);
+                    });
+                    searchResults.style.display = 'block';
+                } else {
+                    searchResults.style.display = 'none';
+                }
+            }
+            
+            // Name search
+            nameSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                performSearch(query, 'name');
+            });
+            
+            // Code search
+            codeSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                performSearch(query, 'code');
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!nameSearchInput.contains(e.target) && !codeSearchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+        }
+
+        // Employee Report Modal Functions
+        let currentReportAction = null; // 'view' or 'export'
+        let selectedEmployeeForReport = null;
+
+        // Open employee report modal
+        async function openEmployeeReportModal(action) {
+            currentReportAction = action;
+            const modal = document.getElementById('employeeReportModal');
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            
+            // Ensure employee data is loaded
+            if (allEmployeeData.length === 0) {
+                console.log('🔄 Loading employee data for modal...');
+                await loadEmployeeListForDetail();
+            }
+            
+            // Update button text based on action
+            if (action === 'view') {
+                confirmBtn.innerHTML = '👁️ Xem báo cáo';
+            } else {
+                confirmBtn.innerHTML = '📊 Xuất báo cáo';
+            }
+            
+            // Reset form
+            document.getElementById('modal-employee-name-search').value = '';
+            document.getElementById('modal-employee-code-search').value = '';
+            document.getElementById('modal-from-date').value = '';
+            document.getElementById('modal-to-date').value = '';
+            document.getElementById('modal-employee-search-results').style.display = 'none';
+            document.getElementById('modal-selected-employee-display').style.display = 'none';
+            selectedEmployeeForReport = null;
+            confirmBtn.disabled = true;
+            
+            modal.style.display = 'block';
+            
+            // Setup search functionality
+            setupModalEmployeeSearch();
+            
+            // Setup calendar functionality
+            setupModalCalendarInputs();
+        }
+
+        // Close employee report modal
+        function closeEmployeeReportModal() {
+            const modal = document.getElementById('employeeReportModal');
+            modal.style.display = 'none';
+            currentReportAction = null;
+            selectedEmployeeForReport = null;
+        }
+
+        // Setup employee search in modal
+        function setupModalEmployeeSearch() {
+            const nameSearchInput = document.getElementById('modal-employee-name-search');
+            const codeSearchInput = document.getElementById('modal-employee-code-search');
+            const searchResults = document.getElementById('modal-employee-search-results');
+            const selectedDisplay = document.getElementById('modal-selected-employee-display');
+            const confirmBtn = document.getElementById('modal-confirm-btn');
+            
+            console.log('🔍 Setting up modal employee search with', allEmployeeData.length, 'employees');
+            console.log('📊 Sample employee data:', allEmployeeData.slice(0, 3));
+            
+            // Function to perform search
+            function performModalSearch(query, searchType) {
+                console.log(`🔍 Modal search: "${query}" (${searchType})`);
+                
+                if (!query || query.length < 1) {
+                    searchResults.style.display = 'none';
+                    return;
+                }
+                
+                const filteredEmployees = allEmployeeData.filter(emp => {
+                    if (searchType === 'name') {
+                        const hoTen = (emp.HoTen || '').toLowerCase();
+                        const phongBan = (emp.PhongBan || '').toLowerCase();
+                        const chucVu = (emp.ChucVu || '').toLowerCase();
+                        const matches = hoTen.includes(query) || phongBan.includes(query) || chucVu.includes(query);
+                        if (matches) {
+                            console.log('✅ Name match found:', emp.HoTen, 'for query:', query);
+                        }
+                        return matches;
+                    } else if (searchType === 'code') {
+                        const maNhanVienNoiBo = (emp.MaNhanVienNoiBo || '').toLowerCase();
+                        const maNhanVienHANET = (emp.MaNhanVienHANET || '').toLowerCase();
+                        const matches = maNhanVienNoiBo.includes(query) || maNhanVienHANET.includes(query);
+                        if (matches) {
+                            console.log('✅ Code match found:', emp.HoTen, 'MaNhanVienNoiBo:', emp.MaNhanVienNoiBo, 'MaNhanVienHANET:', emp.MaNhanVienHANET, 'for query:', query);
+                        }
+                        return matches;
+                    }
+                    return false;
+                });
+                
+                console.log(`📊 Found ${filteredEmployees.length} matching employees`);
+                
+                if (filteredEmployees.length > 0) {
+                    searchResults.innerHTML = '';
+                    filteredEmployees.forEach(emp => {
+                        const item = document.createElement('div');
+                        item.style.padding = '10px';
+                        item.style.cursor = 'pointer';
+                        item.style.borderBottom = '1px solid #eee';
+                        item.innerHTML = `
+                            <div style="font-weight: bold;">${emp.HoTen || 'N/A'}</div>
+                            <div style="font-size: 0.85em; color: #666;">
+                                Mã nội bộ: ${emp.MaNhanVienNoiBo || 'N/A'} | 
+                                Mã HANET: ${emp.MaNhanVienHANET || 'N/A'} |
+                                Phòng ban: ${emp.PhongBan || 'N/A'}
+                            </div>
+                        `;
+                        
+                        item.addEventListener('click', () => {
+                            selectedEmployeeForReport = emp;
+                            selectedDisplay.innerHTML = `
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <div>
+                                        <strong>${emp.HoTen || 'N/A'}</strong><br>
+                                        <small style="color: #666;">
+                                            Mã nội bộ: ${emp.MaNhanVienNoiBo || 'N/A'} | 
+                                            Mã HANET: ${emp.MaNhanVienHANET || 'N/A'}
+                                        </small>
+                                    </div>
+                                    <button onclick="clearModalEmployeeSelection()" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">✕</button>
+                                </div>
+                            `;
+                            selectedDisplay.style.display = 'block';
+                            searchResults.style.display = 'none';
+                            nameSearchInput.value = '';
+                            codeSearchInput.value = '';
+                            
+                            // Enable confirm button
+                            confirmBtn.disabled = false;
+                        });
+                        
+                        searchResults.appendChild(item);
+                    });
+                    searchResults.style.display = 'block';
+                } else {
+                    searchResults.style.display = 'none';
+                }
+            }
+            
+            // Name search
+            nameSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                performModalSearch(query, 'name');
+            });
+            
+            // Code search
+            codeSearchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                performModalSearch(query, 'code');
+            });
+            
+            // Hide dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!nameSearchInput.contains(e.target) && !codeSearchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                    searchResults.style.display = 'none';
+                }
+            });
+        }
+
+        // Clear modal employee selection
+        function clearModalEmployeeSelection() {
+            selectedEmployeeForReport = null;
+            document.getElementById('modal-selected-employee-display').style.display = 'none';
+            document.getElementById('modal-confirm-btn').disabled = true;
+        }
+
+        // Confirm employee report
+        function confirmEmployeeReport() {
+            if (!selectedEmployeeForReport) {
+                alert('Vui lòng chọn nhân viên');
+                return;
+            }
+            
+            const fromDate = document.getElementById('modal-from-date').value;
+            const toDate = document.getElementById('modal-to-date').value;
+            
+            // Validate dates if provided
+            if (fromDate && !validateDateFormat(fromDate)) {
+                alert('Định dạng ngày "Từ ngày" không đúng. Vui lòng nhập theo định dạng DD/MM/YYYY');
+                return;
+            }
+            
+            if (toDate && !validateDateFormat(toDate)) {
+                alert('Định dạng ngày "Đến ngày" không đúng. Vui lòng nhập theo định dạng DD/MM/YYYY');
+                return;
+            }
+            
+            // Close modal
+            closeEmployeeReportModal();
+            
+            // Execute the report action
+            if (currentReportAction === 'view') {
+                viewEmployeeReport(selectedEmployeeForReport, fromDate, toDate);
+            } else if (currentReportAction === 'export') {
+                exportEmployeeReport(selectedEmployeeForReport, fromDate, toDate);
+            }
+        }
+
+        // View employee report
+        async function viewEmployeeReport(employee, fromDate, toDate) {
+            const statusDiv = document.getElementById('reports-status');
+            const previewDiv = document.getElementById('report-preview');
+            
+            try {
+                statusDiv.innerHTML = `<span class="loading-spinner"></span> Đang tải báo cáo cho ${employee.HoTen}...`;
+                statusDiv.className = 'status loading';
+                
+                // Build query string
+                const queryParams = new URLSearchParams();
+                queryParams.append('personId', employee.MaNhanVienNoiBo || employee.MaNhanVienHANET || '');
+                
+                if (fromDate && toDate && fromDate === toDate) {
+                    // Same date - use date parameter
+                    const apiDate = convertDateToAPI(fromDate);
+                    queryParams.append('date', apiDate);
+                    console.log('📅 Single date:', fromDate, '->', apiDate);
+                } else {
+                    // Date range - use startDate and endDate
+                    if (fromDate) {
+                        const apiFromDate = convertDateToAPI(fromDate);
+                        queryParams.append('startDate', apiFromDate);
+                        console.log('📅 From date conversion:', fromDate, '->', apiFromDate);
+                    }
+                    if (toDate) {
+                        const apiToDate = convertDateToAPI(toDate);
+                        queryParams.append('endDate', apiToDate);
+                        console.log('📅 To date conversion:', toDate, '->', apiToDate);
+                    }
+                }
+                
+                console.log('🔍 Query parameters:', queryParams.toString());
+                
+                const response = await fetch(`/attendance-data?${queryParams.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const data = await response.json();
+                console.log(`📊 Báo cáo nhân viên ${employee.HoTen}:`, data);
+                
+                if (data && data.length > 0) {
+                    updateReportPreview(data);
+                    statusDiv.innerHTML = `✅ Đã tải ${data.length} bản ghi cho ${employee.HoTen}`;
+                    statusDiv.className = 'status success';
+                    previewDiv.style.display = 'block';
+                } else {
+                    statusDiv.innerHTML = `⚠️ Không có dữ liệu cho ${employee.HoTen}`;
+                    statusDiv.className = 'status warning';
+                    previewDiv.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error(`❌ Lỗi tải báo cáo ${employee.HoTen}:`, error);
+                statusDiv.innerHTML = `❌ Lỗi tải báo cáo ${employee.HoTen}: ${error.message}`;
+                statusDiv.className = 'status error';
+                previewDiv.style.display = 'none';
+            }
+        }
+
+        // Export employee report
+        async function exportEmployeeReport(employee, fromDate, toDate) {
+            const statusDiv = document.getElementById('reports-status');
+            
+            try {
+                statusDiv.innerHTML = `<span class="loading-spinner"></span> Đang xuất báo cáo cho ${employee.HoTen}...`;
+                statusDiv.className = 'status loading';
+                
+                // Build query string
+                const queryParams = new URLSearchParams();
+                queryParams.append('personId', employee.MaNhanVienNoiBo || employee.MaNhanVienHANET || '');
+                
+                if (fromDate && toDate && fromDate === toDate) {
+                    // Same date - use date parameter
+                    const apiDate = convertDateToAPI(fromDate);
+                    queryParams.append('date', apiDate);
+                } else {
+                    // Date range - use startDate and endDate
+                    if (fromDate) {
+                        queryParams.append('startDate', convertDateToAPI(fromDate));
+                    }
+                    if (toDate) {
+                        queryParams.append('endDate', convertDateToAPI(toDate));
+                    }
+                }
+                
+                const response = await fetch(`/export/report?${queryParams.toString()}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `bao_cao_nhan_vien_${employee.HoTen.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                window.URL.revokeObjectURL(url);
+                
+                statusDiv.innerHTML = `✅ Xuất báo cáo cho ${employee.HoTen} thành công!`;
+                statusDiv.className = 'status success';
+                
+            } catch (error) {
+                console.error(`❌ Lỗi xuất báo cáo ${employee.HoTen}:`, error);
+                statusDiv.innerHTML = `❌ Lỗi xuất báo cáo ${employee.HoTen}: ${error.message}`;
+                statusDiv.className = 'status error';
+            }
+        }
+
+        // Setup modal calendar inputs
+        function setupModalCalendarInputs() {
+            const fromDateInput = document.getElementById('modal-from-date');
+            const toDateInput = document.getElementById('modal-to-date');
+            
+            // Add click handlers to open calendar
+            fromDateInput.addEventListener('click', () => {
+                toggleModalCalendar('modal-from-calendar');
+            });
+            
+            toDateInput.addEventListener('click', () => {
+                toggleModalCalendar('modal-to-calendar');
+            });
+        }
+
+        // Modal Calendar Functions
+        let modalCurrentCalendar = null;
+        let modalCurrentDate = null;
+
+        // Toggle modal calendar
+        function toggleModalCalendar(calendarId) {
+            // Close other calendars first
+            document.querySelectorAll('.modal .calendar-popup').forEach(popup => {
+                if (popup.id !== calendarId) {
+                    popup.classList.remove('show');
+                }
+            });
+
+            const popup = document.getElementById(calendarId);
+            if (popup.classList.contains('show')) {
+                popup.classList.remove('show');
+            } else {
+                popup.classList.add('show');
+                modalCurrentCalendar = calendarId;
+                modalCurrentDate = new Date();
+                renderModalCalendar(calendarId);
+            }
+        }
+
+        // Render modal calendar
+        function renderModalCalendar(calendarId) {
+            const popup = document.getElementById(calendarId);
+            const date = modalCurrentDate;
+            
+            const monthNames = [
+                'Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6',
+                'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'
+            ];
+            
+            const dayNames = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+            
+            // Get first day of month and number of days
+            const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
+            const lastDay = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startingDayOfWeek = firstDay.getDay();
+            
+            // Create calendar HTML
+            let calendarHTML = `
+                <div class="calendar-header">
+                    <button class="calendar-nav" onclick="navigateModalCalendar(-1)">‹</button>
+                    <div class="calendar-month-year">${monthNames[date.getMonth()]} ${date.getFullYear()}</div>
+                    <button class="calendar-nav" onclick="navigateModalCalendar(1)">›</button>
+                </div>
+                <div class="calendar-grid">
+            `;
+            
+            // Add day headers
+            dayNames.forEach(day => {
+                calendarHTML += `<div class="calendar-day-header">${day}</div>`;
+            });
+            
+            // Add empty cells for days before month starts
+            for (let i = 0; i < startingDayOfWeek; i++) {
+                calendarHTML += `<div class="calendar-day other-month"></div>`;
+            }
+            
+            // Add days of month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDate = new Date(date.getFullYear(), date.getMonth(), day);
+                const isToday = isSameDay(dayDate, new Date());
+                const isSelected = isSameDay(dayDate, getModalSelectedDate(calendarId));
+                
+                let dayClass = 'calendar-day';
+                if (isToday) dayClass += ' today';
+                if (isSelected) dayClass += ' selected';
+                
+                calendarHTML += `<div class="${dayClass}" onclick="selectModalDate(${day})">${day}</div>`;
+            }
+            
+            calendarHTML += '</div>';
+            popup.innerHTML = calendarHTML;
+        }
+
+        // Navigate modal calendar
+        function navigateModalCalendar(direction) {
+            modalCurrentDate.setMonth(modalCurrentDate.getMonth() + direction);
+            renderModalCalendar(modalCurrentCalendar);
+        }
+
+        // Select modal date
+        function selectModalDate(day) {
+            const selectedDate = new Date(modalCurrentDate.getFullYear(), modalCurrentDate.getMonth(), day);
+            const formattedDate = formatModalDate(selectedDate);
+            
+            // Update input field
+            if (modalCurrentCalendar === 'modal-from-calendar') {
+                document.getElementById('modal-from-date').value = formattedDate;
+            } else if (modalCurrentCalendar === 'modal-to-calendar') {
+                document.getElementById('modal-to-date').value = formattedDate;
+            }
+            
+            // Close calendar
+            document.getElementById(modalCurrentCalendar).classList.remove('show');
+        }
+
+        // Get selected date for modal calendar
+        function getModalSelectedDate(calendarId) {
+            let inputId;
+            if (calendarId === 'modal-from-calendar') {
+                inputId = 'modal-from-date';
+            } else if (calendarId === 'modal-to-calendar') {
+                inputId = 'modal-to-date';
+            }
+            
+            const inputValue = document.getElementById(inputId).value;
+            if (inputValue) {
+                return parseModalDate(inputValue);
+            }
+            return null;
+        }
+
+        // Format date for modal (DD/MM/YYYY)
+        function formatModalDate(date) {
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            return `${day}/${month}/${year}`;
+        }
+
+        // Parse modal date (DD/MM/YYYY)
+        function parseModalDate(dateStr) {
+            const parts = dateStr.split('/');
+            if (parts.length === 3) {
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            }
+            return null;
+        }
+
+        // Check if two dates are the same day
+        function isSameDay(date1, date2) {
+            if (!date1 || !date2) return false;
+            return date1.getDate() === date2.getDate() &&
+                   date1.getMonth() === date2.getMonth() &&
+                   date1.getFullYear() === date2.getFullYear();
+        }
+
+        // Close modal calendars when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.modal .calendar-widget')) {
+                document.querySelectorAll('.modal .calendar-popup').forEach(popup => {
+                    popup.classList.remove('show');
+                });
+            }
+        });
+
         // Convert DD/MM/YYYY to YYYY-MM-DD for API
         function convertDateToAPI(dateStr) {
             if (!dateStr) return '';
@@ -1775,7 +2362,7 @@
             
             console.log('🔍 Debug loadEmployeeDetail:', { selectedEmployeeId, selectedEmployeeName, selectedDate });
             
-            if (!selectedEmployeeName || !selectedDate) {
+            if ((!selectedEmployeeName && !selectedEmployeeId) || !selectedDate) {
                 statusDiv.innerHTML = '⚠️ Vui lòng chọn nhân viên và ngày';
                 statusDiv.className = 'status error';
                 return;
@@ -1796,29 +2383,41 @@
                 statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang tải chi tiết nhân viên...';
                 statusDiv.className = 'status loading';
                 
-                // Load processed data
-                const processedResponse = await fetch(`/attendance-data?personId=${encodeURIComponent(selectedEmployeeName)}&startDate=${apiDate}&endDate=${apiDate}`);
-                const processedData = processedResponse.ok ? await processedResponse.json() : [];
+                // Build query parameters based on available data
+                let queryParams = `date=${apiDate}`;
                 
-                console.log('📊 Processed data response:', processedResponse.status, processedData);
+                if (selectedEmployeeName) {
+                    queryParams += `&personName=${encodeURIComponent(selectedEmployeeName)}`;
+                }
                 
-                // Load raw data
-                const rawResponse = await fetch(`/raw-events?personName=${encodeURIComponent(selectedEmployeeName)}&date=${apiDate}`);
+                if (selectedEmployeeId) {
+                    // Check if it looks like a Hanet ID (long numeric) or internal code (short)
+                    if (selectedEmployeeId.length > 10) {
+                        queryParams += `&personId=${encodeURIComponent(selectedEmployeeId)}`;
+                    } else {
+                        queryParams += `&employeeCode=${encodeURIComponent(selectedEmployeeId)}`;
+                    }
+                }
+                
+                console.log('🔍 Query parameters:', queryParams);
+                
+                // Load raw data from dulieutho table only
+                const rawResponse = await fetch(`/raw-events?${queryParams}`);
                 const rawData = rawResponse.ok ? await rawResponse.json() : [];
                 
                 console.log('📊 Raw data response:', rawResponse.status, rawData);
-                console.log('📊 Dữ liệu chi tiết:', { processedData, rawData });
+                console.log('📊 Dữ liệu chi tiết từ dulieutho:', rawData);
                 
-                if (processedData.length > 0 || rawData.length > 0) {
-                    updateEmployeeSummary(processedData, rawData);
-                    updateEmployeeTimeline(rawData, selectedEmployeeName, selectedDate);
+                if (rawData.length > 0) {
+                    updateEmployeeSummaryFromRaw(rawData);
+                    updateEmployeeTimeline(rawData, selectedEmployeeName || selectedEmployeeId, selectedDate);
                     
-                    statusDiv.innerHTML = `✅ Đã tải chi tiết cho ${selectedEmployeeName} ngày ${selectedDate}`;
+                    statusDiv.innerHTML = `✅ Đã tải chi tiết cho ${selectedEmployeeName || selectedEmployeeId} ngày ${selectedDate}`;
                     statusDiv.className = 'status success';
                     summaryDiv.style.display = 'block';
                     timelineDiv.style.display = 'block';
                 } else {
-                    statusDiv.innerHTML = `⚠️ Không có dữ liệu cho ${selectedEmployeeName} ngày ${selectedDate}`;
+                    statusDiv.innerHTML = `⚠️ Không có dữ liệu cho ${selectedEmployeeName || selectedEmployeeId} ngày ${selectedDate}`;
                     statusDiv.className = 'status error';
                     summaryDiv.style.display = 'none';
                     timelineDiv.style.display = 'none';
@@ -1833,7 +2432,64 @@
             }
         }
 
-        // Update employee summary
+        // Update employee summary from raw data (dulieutho table)
+        function updateEmployeeSummaryFromRaw(rawData) {
+            console.log('📊 updateEmployeeSummaryFromRaw called with:', rawData);
+            
+            // Count check-ins and check-outs based on device_name
+            const checkins = rawData.filter(item => {
+                const deviceName = (item.device_name || '').toLowerCase();
+                return deviceName.includes('_in') || deviceName.includes('vào');
+            }).length;
+            
+            const checkouts = rawData.filter(item => {
+                const deviceName = (item.device_name || '').toLowerCase();
+                return deviceName.includes('_out') || deviceName.includes('ra');
+            }).length;
+            
+            console.log('🔢 Check-ins/outs from raw data:', { checkins, checkouts });
+            
+            // Calculate total working time from raw data
+            let totalHours = 0;
+            if (rawData.length >= 2) {
+                // Sort by timestamp
+                const sortedData = rawData.sort((a, b) => new Date(a.ts_vn) - new Date(b.ts_vn));
+                
+                // Find pairs of check-in and check-out
+                for (let i = 0; i < sortedData.length - 1; i++) {
+                    const current = sortedData[i];
+                    const next = sortedData[i + 1];
+                    
+                    const currentDevice = (current.device_name || '').toLowerCase();
+                    const nextDevice = (next.device_name || '').toLowerCase();
+                    
+                    // Check if current is check-in and next is check-out
+                    if ((currentDevice.includes('_in') || currentDevice.includes('vào')) &&
+                        (nextDevice.includes('_out') || nextDevice.includes('ra'))) {
+                        
+                        const startTime = new Date(current.ts_vn);
+                        const endTime = new Date(next.ts_vn);
+                        const diffMs = endTime - startTime;
+                        const diffHours = diffMs / (1000 * 60 * 60);
+                        
+                        totalHours += diffHours;
+                    }
+                }
+            }
+            
+            console.log('⏰ Total working hours calculated:', totalHours);
+            
+            // Update UI elements
+            document.getElementById('total-checkins').textContent = checkins;
+            document.getElementById('total-checkouts').textContent = checkouts;
+            document.getElementById('total-hours').textContent = Math.round(totalHours * 10) / 10;
+            
+            // Update status count (simplified for raw data)
+            const statusCount = rawData.length;
+            document.getElementById('status-count').textContent = statusCount;
+        }
+
+        // Update employee summary (legacy function - kept for compatibility)
         function updateEmployeeSummary(processedData, rawData) {
             console.log('📊 updateEmployeeSummary called with:', { processedData, rawData });
             
@@ -1890,7 +2546,6 @@
                 const row = document.createElement('tr');
                 const eventType = item.device_name && item.device_name.includes('_IN') ? 'Check-in' : 'Check-out';
                 const deviceName = item.device_name || '-';
-                const location = item.device_name ? deviceName.replace('_IN', '').replace('_OUT', '') : '-';
                 
                 // Add alternating row colors
                 if (index % 2 === 0) {
@@ -1898,14 +2553,14 @@
                 }
                 
                 row.innerHTML = `
-                    <td style="font-weight: 500;">${formatDateTime(item.ts_vn)}</td>
+                    <td style="font-weight: 500;">${formatDateOnly(item.ts_vn)}</td>
+                    <td style="font-weight: 500;">${formatTimeOnly(item.ts_vn)}</td>
                     <td>
                         <span class="status-badge ${eventType === 'Check-in' ? 'success' : 'error'}" style="padding: 6px 12px; border-radius: 20px; font-weight: bold;">
                             ${eventType === 'Check-in' ? '📥 VÀO' : '📤 RA'}
                         </span>
                     </td>
                     <td style="font-family: monospace; font-size: 0.9em;">${deviceName}</td>
-                    <td style="font-weight: 500;">${location}</td>
                     <td>
                         <span class="status-badge ${item.DaXuLy ? 'success' : 'warning'}" style="padding: 4px 8px; border-radius: 12px;">
                             ${item.DaXuLy ? '✅ Đã xử lý' : '⏳ Chưa xử lý'}
@@ -1944,6 +2599,30 @@
                 day: '2-digit',
                 month: '2-digit',
                 year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function formatDateOnly(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            // Data from SQL Server is UTC+7, but JavaScript treats it as UTC, so subtract 7 hours
+            const vietnamTime = new Date(date.getTime() - (7 * 60 * 60 * 1000));
+            return vietnamTime.toLocaleDateString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric'
+            });
+        }
+
+        function formatTimeOnly(dateString) {
+            if (!dateString) return '-';
+            const date = new Date(dateString);
+            // Data from SQL Server is UTC+7, but JavaScript treats it as UTC, so subtract 7 hours
+            const vietnamTime = new Date(date.getTime() - (7 * 60 * 60 * 1000));
+            return vietnamTime.toLocaleTimeString('vi-VN', {
                 hour: '2-digit',
                 minute: '2-digit',
                 second: '2-digit'
@@ -2146,38 +2825,19 @@
             await loadEmployeeListForManagement();
         }
 
+        // Global variable to store all employees data
+        let allEmployeesData = [];
+
         async function loadEmployeeListForManagement() {
             try {
                 const response = await fetch('/employees');
                 const employees = await response.json();
                 
-                const tbody = document.getElementById('employee-table-body');
-                if (!tbody) return;
+                // Store all employees data for search functionality
+                allEmployeesData = employees;
                 
-                if (employees.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #666;">Không có dữ liệu nhân viên</td></tr>';
-                    return;
-                }
-                
-                tbody.innerHTML = employees.map(emp => `
-                    <tr>
-                        <td>${emp.HoTen || ''}</td>
-                        <td>${emp.GioiTinh || ''}</td>
-                        <td>${emp.NgaySinh ? formatDate(emp.NgaySinh) : ''}</td>
-                        <td>${emp.SoDienThoai || ''}</td>
-                        <td>${emp.PhongBan || ''}</td>
-                        <td>${emp.ChucVu || ''}</td>
-                        <td>${emp.CaLamViec || ''}</td>
-                        <td>${emp.MaNhanVienHANET || ''}</td>
-                        <td>${emp.MaNhanVienNoiBo || ''}</td>
-                        <td>
-                            <div class="action-buttons">
-                                <button class="btn btn-warning btn-sm" onclick="editEmployee('${emp.MaNhanVienNoiBo}')">✏️</button>
-                                <button class="btn btn-danger btn-sm" onclick="deleteEmployee('${emp.MaNhanVienNoiBo}', '${emp.HoTen}')">🗑️</button>
-                            </div>
-                        </td>
-                    </tr>
-                `).join('');
+                // Display all employees initially
+                displayEmployees(employees);
                 
                 console.log('✅ Employee list loaded:', employees.length, 'employees');
                 if (employees.length > 0) {
@@ -2187,10 +2847,88 @@
                 console.error('❌ Error loading employee list:', error);
                 const tbody = document.getElementById('employee-table-body');
                 if (tbody) {
-                    tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #dc3545;">Lỗi tải dữ liệu nhân viên</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #dc3545;">Lỗi tải dữ liệu nhân viên</td></tr>';
                 }
                 showNotification('Không thể tải danh sách nhân viên. Vui lòng thử lại.', 'error', 'Lỗi');
             }
+        }
+
+        // Display employees in table
+        function displayEmployees(employees) {
+            const tbody = document.getElementById('employee-table-body');
+            if (!tbody) return;
+            
+            if (employees.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">Không có dữ liệu nhân viên</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = employees.map(emp => `
+                <tr>
+                    <td>${emp.HoTen || ''}</td>
+                    <td>${emp.NamSinh || ''}</td>
+                    <td>${emp.PhongBan || ''}</td>
+                    <td>${emp.ChucVu || ''}</td>
+                    <td>${emp.CaLamViec || ''}</td>
+                    <td>${emp.MaNhanVienHANET || ''}</td>
+                    <td>${emp.MaNhanVienNoiBo || ''}</td>
+                    <td>
+                        <div class="action-buttons">
+                            <button class="btn btn-warning btn-sm" onclick="editEmployee(\`${emp.MaNhanVienNoiBo || emp.MaNhanVienHANET}\`)">✏️</button>
+                            <button class="btn btn-danger btn-sm" onclick="deleteEmployee(\`${emp.MaNhanVienNoiBo || emp.MaNhanVienHANET}\`, \`${emp.HoTen.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">🗑️</button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+            
+            // Update search results count
+            updateSearchResultsCount(employees.length);
+        }
+
+        // Search employees function
+        function searchEmployees() {
+            const searchTerm = document.getElementById('employee-search').value.toLowerCase().trim();
+            
+            if (!searchTerm) {
+                // If search is empty, show all employees
+                displayEmployees(allEmployeesData);
+                return;
+            }
+            
+            // Filter employees based on search term
+            const filteredEmployees = allEmployeesData.filter(emp => {
+                const hoTen = (emp.HoTen || '').toLowerCase();
+                const maNhanVienNoiBo = (emp.MaNhanVienNoiBo || '').toLowerCase();
+                const maNhanVienHANET = (emp.MaNhanVienHANET || '').toLowerCase();
+                const phongBan = (emp.PhongBan || '').toLowerCase();
+                const chucVu = (emp.ChucVu || '').toLowerCase();
+                
+                return hoTen.includes(searchTerm) || 
+                       maNhanVienNoiBo.includes(searchTerm) || 
+                       maNhanVienHANET.includes(searchTerm) ||
+                       phongBan.includes(searchTerm) ||
+                       chucVu.includes(searchTerm);
+            });
+            
+            displayEmployees(filteredEmployees);
+        }
+
+        // Update search results count
+        function updateSearchResultsCount(count) {
+            const countElement = document.getElementById('search-results-count');
+            if (countElement) {
+                if (count === allEmployeesData.length) {
+                    countElement.textContent = `Hiển thị tất cả ${count} nhân viên`;
+                } else {
+                    countElement.textContent = `Tìm thấy ${count} nhân viên`;
+                }
+            }
+        }
+
+        // Clear search function
+        function clearEmployeeSearch() {
+            document.getElementById('employee-search').value = '';
+            displayEmployees(allEmployeesData);
         }
 
         // Add Employee
@@ -2436,6 +3174,261 @@
         .status-badge.offline { 
             background: linear-gradient(135deg, #f44336, #d32f2f); 
             color: white; 
+        }
+        
+        .device-info { 
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb); 
+            color: #1976d2; 
+            padding: 4px 8px; 
+            border-radius: 4px; 
+            font-size: 0.85em; 
+            font-weight: 500;
+            display: inline-block;
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        /* Search box styles */
+        #employee-search:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        #employee-search:hover {
+            border-color: #4CAF50;
+        }
+        
+        .search-container button:hover {
+            color: #4CAF50;
+        }
+        
+        /* Enhanced dropdown styles for employee detail */
+        #employee-name-dropdown, #employee-id-dropdown {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 0 0 8px 8px;
+        }
+        
+        #employee-name-dropdown div:hover, #employee-id-dropdown div:hover {
+            background-color: #e3f2fd !important;
+            transition: background-color 0.2s ease;
+        }
+        
+        #employee-name-search:focus, #employee-id-search:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        #employee-name-search:hover, #employee-id-search:hover {
+            border-color: #4CAF50;
+        }
+        
+        /* Reports employee search dropdown */
+        #employee-search-results {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+        
+        #employee-search-results div {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        #employee-search-results div:hover {
+            background-color: #e3f2fd;
+        }
+        
+        #employee-search-results div:last-child {
+            border-bottom: none;
+        }
+        
+        #employee-name-search, #employee-code-search {
+            transition: border-color 0.2s ease;
+        }
+        
+        #employee-name-search:focus, #employee-code-search:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        #employee-name-search:hover, #employee-code-search:hover {
+            border-color: #4CAF50;
+        }
+        
+        /* Employee Report Modal Styles */
+        #modal-employee-search-results {
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            border-radius: 4px;
+        }
+        
+        #modal-employee-search-results div {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+        
+        #modal-employee-search-results div:hover {
+            background-color: #e3f2fd;
+        }
+        
+        #modal-employee-search-results div:last-child {
+            border-bottom: none;
+        }
+        
+        #modal-employee-name-search, #modal-employee-code-search {
+            transition: border-color 0.2s ease;
+        }
+        
+        #modal-employee-name-search:focus, #modal-employee-code-search:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        #modal-employee-name-search:hover, #modal-employee-code-search:hover {
+            border-color: #4CAF50;
+        }
+        
+        #modal-from-date, #modal-to-date {
+            transition: border-color 0.2s ease;
+        }
+        
+        #modal-from-date:focus, #modal-to-date:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+        
+        #modal-confirm-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        
+        #modal-confirm-btn:disabled:hover {
+            background-color: #ccc;
+        }
+        
+        /* Modal Calendar Widget Styles */
+        .modal .calendar-widget {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        
+        .modal .calendar-input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+            cursor: pointer;
+        }
+        
+        .modal .calendar-input:focus {
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+            outline: none;
+        }
+        
+        .modal .calendar-icon {
+            position: absolute;
+            right: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            color: #666;
+            z-index: 10;
+        }
+        
+        .modal .calendar-icon:hover {
+            color: #4CAF50;
+        }
+        
+        .modal .calendar-popup {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            z-index: 1000;
+            display: none;
+            padding: 10px;
+        }
+        
+        .modal .calendar-popup.show {
+            display: block;
+        }
+        
+        .modal .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .modal .calendar-nav {
+            background: none;
+            border: none;
+            font-size: 16px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 3px;
+        }
+        
+        .modal .calendar-nav:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .modal .calendar-month-year {
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .modal .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 2px;
+        }
+        
+        .modal .calendar-day-header {
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #666;
+            padding: 5px;
+        }
+        
+        .modal .calendar-day {
+            text-align: center;
+            padding: 8px;
+            cursor: pointer;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .modal .calendar-day:hover {
+            background-color: #e3f2fd;
+        }
+        
+        .modal .calendar-day.selected {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .modal .calendar-day.other-month {
+            color: #ccc;
+        }
+        
+        .modal .calendar-day.today {
+            background-color: #ffeb3b;
+            color: #333;
+        }
+        
+        .modal .calendar-day.today.selected {
+            background-color: #4CAF50;
+            color: white;
         }
         
         /* Table enhancements */

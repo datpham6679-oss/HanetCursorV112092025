@@ -319,6 +319,68 @@ router.post('/hanet-webhook', async (req, res) => {
     
     try {
         const p = parsePayload(req);
+        
+        // Fix encoding issues for Vietnamese characters
+        const fixEncoding = (str) => {
+            if (!str) return str;
+            try {
+                // Fix common Vietnamese character encoding issues
+                return str
+                    // Fix specific names
+                    .replace(/Phạm QuốĐức Đạt/g, 'Phạm Quốc Đạt')
+                    .replace(/Nhan NgọĐức Thêm/g, 'Nhan Ngọc Thêm')
+                    .replace(/Trưởng Đứca/g, 'Trưởng Đức')
+                    .replace(/Nguyễn Thị BíĐứch Nguyên/g, 'Nguyễn Thị Bích Nguyên')
+                    .replace(/Nhân viên phụĐức vụ/g, 'Nhân viên phục vụ')
+                    .replace(/Nguyễn ĐứĐức Huệ/g, 'Nguyễn Đức Huệ')
+                    .replace(/Nguyễn ĐứĐức Tiến/g, 'Nguyễn Đức Tiến')
+                    // Fix common character patterns
+                    .replace(/QuốĐức/g, 'Quốc')
+                    .replace(/NgọĐức/g, 'Ngọc')
+                    .replace(/Đứca/g, 'Đức')
+                    .replace(/BíĐứch/g, 'Bích')
+                    .replace(/phụĐức/g, 'phục')
+                    .replace(/ĐứĐức/g, 'Đức')
+                    // Fix more patterns
+                    .replace(/QuốcĐức/g, 'Quốc')
+                    .replace(/NgọcĐức/g, 'Ngọc')
+                    .replace(/ĐứcĐức/g, 'Đức')
+                    .replace(/BíchĐứch/g, 'Bích')
+                    .replace(/phụcĐức/g, 'phục')
+                    .replace(/T\? Th�ng tin/g, 'Tổ Thông tin')
+                    .replace(/Ph?m Qu?c Đ?t/g, 'Phạm Quốc Đạt')
+                    .replace(/Nguy?n/g, 'Nguyễn')
+                    .replace(/Tr?n/g, 'Trần')
+                    .replace(/H�/g, 'Hà')
+                    .replace(/\bDuc\b/g, 'Đức')
+                    .replace(/\bDung\b/g, 'Dũng');
+            } catch (e) {
+                return str;
+            }
+        };
+        
+        // Apply encoding fix to relevant fields
+        if (p.personName) {
+            const originalName = p.personName;
+            p.personName = fixEncoding(p.personName);
+            if (originalName !== p.personName) {
+                console.log(`🔧 Fixed encoding: "${originalName}" → "${p.personName}"`);
+            }
+        }
+        if (p.personTitle) {
+            const originalTitle = p.personTitle;
+            p.personTitle = fixEncoding(p.personTitle);
+            if (originalTitle !== p.personTitle) {
+                console.log(`🔧 Fixed encoding: "${originalTitle}" → "${p.personTitle}"`);
+            }
+        }
+        if (p.deviceName) {
+            const originalDevice = p.deviceName;
+            p.deviceName = fixEncoding(p.deviceName);
+            if (originalDevice !== p.deviceName) {
+                console.log(`🔧 Fixed encoding: "${originalDevice}" → "${p.deviceName}"`);
+            }
+        }
 
     const vnFull = helpers.normalizeDateString(p.date) || helpers.epochToVNString(p.time);
     const { tsVN, hmsVN, dmyVN } = helpers.buildTimes(vnFull);
@@ -328,6 +390,46 @@ router.post('/hanet-webhook', async (req, res) => {
     const deviceName = p.deviceName || '-';
     const deviceId = p.deviceID || '-';
     const eventId = p.id || `${Date.now()}-${Math.random()}`;
+
+    // Log essential webhook info for debugging
+    const safeString = (str) => {
+        if (!str) return '';
+        try {
+            // Fix common Vietnamese character encoding issues
+            return str
+                // Fix specific names
+                .replace(/Phạm QuốĐức Đạt/g, 'Phạm Quốc Đạt')
+                .replace(/Nhan NgọĐức Thêm/g, 'Nhan Ngọc Thêm')
+                .replace(/Trưởng Đứca/g, 'Trưởng Đức')
+                .replace(/Nguyễn Thị BíĐứch Nguyên/g, 'Nguyễn Thị Bích Nguyên')
+                .replace(/Nhân viên phụĐức vụ/g, 'Nhân viên phục vụ')
+                .replace(/Nguyễn ĐứĐức Huệ/g, 'Nguyễn Đức Huệ')
+                .replace(/Nguyễn ĐứĐức Tiến/g, 'Nguyễn Đức Tiến')
+                // Fix common character patterns
+                .replace(/QuốĐức/g, 'Quốc')
+                .replace(/NgọĐức/g, 'Ngọc')
+                .replace(/Đứca/g, 'Đức')
+                .replace(/BíĐứch/g, 'Bích')
+                .replace(/phụĐức/g, 'phục')
+                .replace(/ĐứĐức/g, 'Đức')
+                // Fix more patterns
+                .replace(/QuốcĐức/g, 'Quốc')
+                .replace(/NgọcĐức/g, 'Ngọc')
+                .replace(/ĐứcĐức/g, 'Đức')
+                .replace(/BíchĐứch/g, 'Bích')
+                .replace(/phụcĐức/g, 'phục');
+        } catch (e) {
+            return str;
+        }
+    };
+    
+    console.log(`📩 Hanet webhook: ${type.toUpperCase()}`);
+    console.log(`   Date: ${p.date}`);
+    console.log(`   Person: ${safeString(p.personName || '')}`);
+    console.log(`   Title: ${safeString(p.personTitle || '')}`);
+    console.log(`   AliasID: ${p.aliasID || ''}`);
+    console.log(`   DeviceID: ${p.deviceID || ''}`);
+    console.log(`   DeviceName: ${safeString(p.deviceName || '')}`);
 
         const pool = await poolPromise;
         const request = pool.request();
@@ -459,6 +561,7 @@ router.post('/hanet-webhook', async (req, res) => {
         }
         
         logAttendanceEvent(type, hmsVN, empName, deviceName, deviceId, dmyVN);
+        
         return res.status(200).json({ ok: true });
         
     } catch (error) {
@@ -565,47 +668,68 @@ router.get('/report/excel', async (req, res) => {
 router.get('/attendance-data', async (req, res) => {
     try {
         const pool = await poolPromise;
-        const { startDate, endDate, personId, status, department } = req.query;
+        const { startDate, endDate, personId, status, department, date } = req.query;
 
-        let query = `
-            SELECT
-                nv.MaNhanVienNoiBo,
-                nv.HoTen,
-                c.NgayChamCong,
-                c.GioVao,
-                c.GioRa,
-                c.ThoiGianLamViec,
-                c.TrangThai,
-                c.CaLamViec
-            FROM ChamCongDaXuLyMoi AS c
-            JOIN NhanVien AS nv ON c.MaNhanVienNoiBo = nv.MaNhanVienNoiBo
-        `;
+               let query = `
+                   SELECT
+                       nv.MaNhanVienNoiBo,
+                       nv.HoTen,
+                       CAST(raw.ts_vn AS DATE) AS NgayChamCong,
+                       CASE WHEN raw.event_type = 'vào' THEN raw.ts_vn ELSE NULL END AS GioVao,
+                       CASE WHEN raw.event_type = 'ra' THEN raw.ts_vn ELSE NULL END AS GioRa,
+                       NULL AS ThoiGianLamViec,
+                       CASE 
+                           WHEN raw.event_type = 'vào' THEN 'Check-in'
+                           WHEN raw.event_type = 'ra' THEN 'Check-out'
+                           ELSE raw.event_type
+                       END AS TrangThai,
+                       nv.CaLamViec,
+                       CASE WHEN raw.event_type = 'vào' THEN raw.device_name ELSE NULL END AS DiaDiemVao,
+                       CASE WHEN raw.event_type = 'ra' THEN raw.device_name ELSE NULL END AS DiaDiemRa,
+                       raw.ts_vn AS ThoiGianXuLy
+                   FROM dulieutho AS raw
+                   LEFT JOIN NhanVien AS nv ON (raw.person_id = nv.MaNhanVienHANET OR raw.employee_code = nv.MaNhanVienNoiBo)
+                   WHERE raw.employee_name IS NOT NULL 
+                     AND raw.employee_name != '' 
+                     AND raw.employee_name != '-'
+                     AND (raw.person_id IS NOT NULL OR raw.employee_code IS NOT NULL)
+               `;
 
+        console.log('🔍 API /attendance-data called with params:', { startDate, endDate, personId, status, department, date });
+        
         const whereClauses = [];
         const request = pool.request();
 
         // Thêm điều kiện WHERE
+        if (date) {
+            whereClauses.push(`CAST(raw.ts_vn AS DATE) = @date`);
+            request.input('date', sql.Date, date);
+        }
         if (startDate) {
-            whereClauses.push(`c.NgayChamCong >= @startDate`);
+            whereClauses.push(`CAST(raw.ts_vn AS DATE) >= @startDate`);
             request.input('startDate', sql.Date, startDate);
         }
         if (endDate) {
-            whereClauses.push(`c.NgayChamCong <= @endDate`);
+            whereClauses.push(`CAST(raw.ts_vn AS DATE) <= @endDate`);
             request.input('endDate', sql.Date, endDate);
         }
         if (personId) {
-            // Try to find by name instead of ID
+            // Try to find by name or employee code
             whereClauses.push(`(
                 nv.HoTen = @personId 
                 OR nv.HoTen LIKE @personIdLike
-                OR c.TenNhanVien = @personId
-                OR c.TenNhanVien LIKE @personIdLike
+                OR raw.employee_name = @personId
+                OR raw.employee_name LIKE @personIdLike
+                OR nv.MaNhanVienNoiBo = @personId
+                OR nv.MaNhanVienHANET = @personId
+                OR raw.employee_code = @personId
+                OR raw.person_id = @personId
             )`);
             request.input('personId', sql.NVarChar(100), personId);
             request.input('personIdLike', sql.NVarChar(100), `%${personId}%`);
         }
         if (status) {
-            whereClauses.push(`LTRIM(RTRIM(c.TrangThai)) = @status`);
+            whereClauses.push(`LTRIM(RTRIM(raw.event_type)) = @status`);
             request.input('status', sql.NVarChar(50), status.trim());
         }
         if (department) {
@@ -614,11 +738,15 @@ router.get('/attendance-data', async (req, res) => {
         }
 
         if (whereClauses.length > 0) {
-            query += ' WHERE ' + whereClauses.join(' AND ');
+            query += ' AND ' + whereClauses.join(' AND ');
         }
-        query += ' ORDER BY c.NgayChamCong DESC;';
+               query += ' ORDER BY ThoiGianXuLy DESC;';
 
+        console.log('🔍 Final query:', query);
+        console.log('🔍 Query parameters:', request.parameters);
+        
         const result = await request.query(query);
+        console.log('🔍 Query result count:', result.recordset.length);
         res.json(result.recordset);
     } catch (error) {
         console.error('Lỗi lấy dữ liệu chấm công:', error.message);
@@ -626,6 +754,81 @@ router.get('/attendance-data', async (req, res) => {
     }
 });
 
+
+// POST /restore-nhanvien - Khôi phục dữ liệu nhân viên từ backup
+router.post('/restore-nhanvien', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        
+        // Kiểm tra bảng backup có tồn tại không
+        const checkBackup = await pool.request().query(`
+            SELECT COUNT(*) as count FROM sys.tables WHERE name = 'NhanVien_Backup'
+        `);
+        
+        if (checkBackup.recordset[0].count === 0) {
+            return res.status(404).json({
+                success: false,
+                message: 'Bảng NhanVien_Backup không tồn tại!'
+            });
+        }
+        
+        // Xóa dữ liệu hiện tại
+        await pool.request().query('DELETE FROM NhanVien');
+        
+        // Khôi phục từ backup
+        const result = await pool.request().query(`
+            INSERT INTO NhanVien (HoTen, NamSinh, ChucVu, PhongBan, CaLamViec, MaNhanVienNoiBo, MaNhanVienHANET, NgayCapNhat)
+            SELECT HoTen, NamSinh, ChucVu, PhongBan, CaLamViec, MaNhanVienNoiBo, MaNhanVienHANET, NgayCapNhat
+            FROM NhanVien_Backup
+        `);
+        
+        res.json({
+            success: true,
+            message: `Đã khôi phục ${result.rowsAffected[0]} nhân viên từ backup`,
+            restoredCount: result.rowsAffected[0]
+        });
+        
+    } catch (error) {
+        console.error('❌ Lỗi khôi phục nhân viên:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi khôi phục nhân viên',
+            error: error.message
+        });
+    }
+});
+
+// POST /backup-nhanvien - Tạo backup dữ liệu nhân viên
+router.post('/backup-nhanvien', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        
+        // Xóa bảng backup cũ nếu tồn tại
+        await pool.request().query(`
+            IF EXISTS (SELECT * FROM sys.tables WHERE name = 'NhanVien_Backup')
+                DROP TABLE NhanVien_Backup
+        `);
+        
+        // Tạo bảng backup mới
+        const result = await pool.request().query(`
+            SELECT * INTO NhanVien_Backup FROM NhanVien
+        `);
+        
+        res.json({
+            success: true,
+            message: `Đã tạo backup với ${result.rowsAffected[0]} nhân viên`,
+            backupCount: result.rowsAffected[0]
+        });
+        
+    } catch (error) {
+        console.error('❌ Lỗi tạo backup nhân viên:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi tạo backup nhân viên',
+            error: error.message
+        });
+    }
+});
 
 // POST /create-employees-from-data - Tự động tạo nhân viên từ dữ liệu dulieutho
 router.post('/create-employees-from-data', async (req, res) => {
@@ -1022,44 +1225,64 @@ router.get('/export/report', async (req, res) => {
 // Raw events endpoint for employee detail
 router.get('/raw-events', async (req, res) => {
     try {
-        const { personName, date } = req.query;
+        const { personName, personId, employeeCode, date } = req.query;
         
-        if (!personName || !date) {
-            return res.status(400).json({ error: 'Thiếu tên nhân viên hoặc ngày' });
+        if ((!personName && !personId && !employeeCode) || !date) {
+            return res.status(400).json({ error: 'Thiếu tên nhân viên/mã nhân viên hoặc ngày' });
         }
         
         const pool = await poolPromise;
         
-        // Try to find employee by name with multiple variations
+        // Build dynamic query based on available parameters
+        let whereConditions = [];
+        const request = pool.request();
+        
+        // Add name-based search conditions
+        if (personName) {
+            whereConditions.push(`(
+                employee_name = @personName 
+                OR employee_name LIKE @personNameLike
+                OR employee_name LIKE @personNameNoAccent
+                OR employee_name LIKE @personNameWithAccent
+            )`);
+            request.input('personName', sql.NVarChar(100), personName);
+            request.input('personNameLike', sql.NVarChar(100), `%${personName}%`);
+            request.input('personNameNoAccent', sql.NVarChar(100), `%${personName.replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, 'a').replace(/[èéẹẻẽêềếệểễ]/g, 'e').replace(/[ìíịỉĩ]/g, 'i').replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, 'o').replace(/[ùúụủũưừứựửữ]/g, 'u').replace(/[ỳýỵỷỹ]/g, 'y').replace(/đ/g, 'd')}%`);
+            request.input('personNameWithAccent', sql.NVarChar(100), `%${personName.replace(/a/g, '[àáạảãâầấậẩẫăằắặẳẵ]').replace(/e/g, '[èéẹẻẽêềếệểễ]').replace(/i/g, '[ìíịỉĩ]').replace(/o/g, '[òóọỏõôồốộổỗơờớợởỡ]').replace(/u/g, '[ùúụủũưừứựửữ]').replace(/y/g, '[ỳýỵỷỹ]').replace(/d/g, '[đd]')}%`);
+        }
+        
+        // Add person_id search condition
+        if (personId) {
+            whereConditions.push(`person_id = @personId`);
+            request.input('personId', sql.NVarChar(50), personId);
+        }
+        
+        // Add employee_code search condition
+        if (employeeCode) {
+            whereConditions.push(`employee_code = @employeeCode`);
+            request.input('employeeCode', sql.NVarChar(50), employeeCode);
+        }
+        
         const query = `
             SELECT 
                 event_id,
                 person_id,
                 employee_name,
+                employee_code,
                 device_id,
                 device_name,
                 ts_vn,
                 DaXuLy
             FROM dulieutho
-            WHERE (
-                employee_name = @personName 
-                OR employee_name LIKE @personNameLike
-                OR employee_name LIKE @personNameNoAccent
-                OR employee_name LIKE @personNameWithAccent
-            )
+            WHERE (${whereConditions.join(' OR ')})
             AND CAST(ts_vn AS DATE) = @date
             ORDER BY ts_vn DESC
         `;
         
-        const request = pool.request();
-        request.input('personName', sql.NVarChar(100), personName);
-        request.input('personNameLike', sql.NVarChar(100), `%${personName}%`);
-        request.input('personNameNoAccent', sql.NVarChar(100), `%${personName.replace(/[àáạảãâầấậẩẫăằắặẳẵ]/g, 'a').replace(/[èéẹẻẽêềếệểễ]/g, 'e').replace(/[ìíịỉĩ]/g, 'i').replace(/[òóọỏõôồốộổỗơờớợởỡ]/g, 'o').replace(/[ùúụủũưừứựửữ]/g, 'u').replace(/[ỳýỵỷỹ]/g, 'y').replace(/đ/g, 'd')}%`);
-        request.input('personNameWithAccent', sql.NVarChar(100), `%${personName.replace(/a/g, '[àáạảãâầấậẩẫăằắặẳẵ]').replace(/e/g, '[èéẹẻẽêềếệểễ]').replace(/i/g, '[ìíịỉĩ]').replace(/o/g, '[òóọỏõôồốộổỗơờớợởỡ]').replace(/u/g, '[ùúụủũưừứựửữ]').replace(/y/g, '[ỳýỵỷỹ]').replace(/d/g, '[đd]')}%`);
         request.input('date', sql.Date, date);
         
         const result = await request.query(query);
-        // Raw events processed silently
+        console.log('🔍 Raw events query executed:', { personName, personId, employeeCode, date, resultCount: result.recordset.length });
         res.json(result.recordset);
         
     } catch (error) {
@@ -1076,15 +1299,16 @@ router.get('/employees', async (req, res) => {
         const pool = await poolPromise;
         const query = `
             SELECT 
+                ID,
                 MaNhanVienNoiBo,
                 HoTen,
-                GioiTinh,
-                NgaySinh,
-                SoDienThoai,
+                NamSinh,
                 PhongBan,
                 ChucVu,
                 CaLamViec,
-                MaNhanVienHANET
+                MaNhanVienHANET,
+                NgayTao,
+                NgayCapNhat
             FROM NhanVien
             ORDER BY HoTen ASC
         `;
@@ -1106,15 +1330,16 @@ router.get('/employees/:id', async (req, res) => {
         
         const query = `
             SELECT 
+                ID,
                 MaNhanVienNoiBo,
                 HoTen,
-                GioiTinh,
-                NgaySinh,
-                SoDienThoai,
+                NamSinh,
                 PhongBan,
                 ChucVu,
                 CaLamViec,
-                MaNhanVienHANET
+                MaNhanVienHANET,
+                NgayTao,
+                NgayCapNhat
             FROM NhanVien
             WHERE MaNhanVienNoiBo = @id
         `;
@@ -1140,9 +1365,7 @@ router.post('/add-employee', async (req, res) => {
     try {
         const {
             hoTen,
-            gioiTinh,
-            ngaySinh,
-            soDienThoai,
+            namSinh,
             phongBan,
             chucVu,
             caLamViec,
@@ -1151,7 +1374,7 @@ router.post('/add-employee', async (req, res) => {
         } = req.body;
         
         // Validate required fields
-        if (!hoTen || !gioiTinh || !caLamViec || !maNhanVienHANET || !maNhanVienNoiBo) {
+        if (!hoTen || !caLamViec || !maNhanVienHANET || !maNhanVienNoiBo) {
             return res.status(400).json({ error: 'Thiếu thông tin bắt buộc' });
         }
         
@@ -1192,9 +1415,7 @@ router.post('/add-employee', async (req, res) => {
             INSERT INTO NhanVien (
                 MaNhanVienNoiBo,
                 HoTen,
-                GioiTinh,
-                NgaySinh,
-                SoDienThoai,
+                NamSinh,
                 PhongBan,
                 ChucVu,
                 CaLamViec,
@@ -1202,9 +1423,7 @@ router.post('/add-employee', async (req, res) => {
             ) VALUES (
                 @maNhanVienNoiBo,
                 @hoTen,
-                @gioiTinh,
-                @ngaySinh,
-                @soDienThoai,
+                @namSinh,
                 @phongBan,
                 @chucVu,
                 @caLamViec,
@@ -1215,12 +1434,10 @@ router.post('/add-employee', async (req, res) => {
         const insertRequest = pool.request();
         insertRequest.input('maNhanVienNoiBo', sql.NVarChar(50), maNhanVienNoiBo);
         insertRequest.input('hoTen', sql.NVarChar(200), hoTen);
-        insertRequest.input('gioiTinh', sql.NVarChar(10), gioiTinh);
-        insertRequest.input('ngaySinh', sql.Date, ngaySinh || null);
-        insertRequest.input('soDienThoai', sql.NVarChar(20), soDienThoai || null);
+        insertRequest.input('namSinh', sql.Int, namSinh || null);
         insertRequest.input('phongBan', sql.NVarChar(100), phongBan || null);
         insertRequest.input('chucVu', sql.NVarChar(100), chucVu || null);
-        insertRequest.input('caLamViec', sql.NVarChar(10), caLamViec);
+        insertRequest.input('caLamViec', sql.NVarChar(50), caLamViec);
         insertRequest.input('maNhanVienHANET', sql.NVarChar(50), maNhanVienHANET);
         
         await insertRequest.query(insertQuery);
@@ -1240,9 +1457,7 @@ router.put('/employees/:id', async (req, res) => {
         const { id } = req.params;
         const {
             hoTen,
-            gioiTinh,
-            ngaySinh,
-            soDienThoai,
+            namSinh,
             phongBan,
             chucVu,
             caLamViec,
@@ -1250,7 +1465,7 @@ router.put('/employees/:id', async (req, res) => {
         } = req.body;
         
         // Validate required fields
-        if (!hoTen || !gioiTinh || !caLamViec || !maNhanVienHANET) {
+        if (!hoTen || !caLamViec || !maNhanVienHANET) {
             return res.status(400).json({ error: 'Thiếu thông tin bắt buộc' });
         }
         
@@ -1275,25 +1490,22 @@ router.put('/employees/:id', async (req, res) => {
         const updateQuery = `
             UPDATE NhanVien SET
                 HoTen = @hoTen,
-                GioiTinh = @gioiTinh,
-                NgaySinh = @ngaySinh,
-                SoDienThoai = @soDienThoai,
+                NamSinh = @namSinh,
                 PhongBan = @phongBan,
                 ChucVu = @chucVu,
                 CaLamViec = @caLamViec,
-                MaNhanVienHANET = @maNhanVienHANET
+                MaNhanVienHANET = @maNhanVienHANET,
+                NgayCapNhat = GETDATE()
             WHERE MaNhanVienNoiBo = @id
         `;
         
         const updateRequest = pool.request();
         updateRequest.input('id', sql.NVarChar(50), id);
         updateRequest.input('hoTen', sql.NVarChar(200), hoTen);
-        updateRequest.input('gioiTinh', sql.NVarChar(10), gioiTinh);
-        updateRequest.input('ngaySinh', sql.Date, ngaySinh || null);
-        updateRequest.input('soDienThoai', sql.NVarChar(20), soDienThoai || null);
+        updateRequest.input('namSinh', sql.Int, namSinh || null);
         updateRequest.input('phongBan', sql.NVarChar(100), phongBan || null);
         updateRequest.input('chucVu', sql.NVarChar(100), chucVu || null);
-        updateRequest.input('caLamViec', sql.NVarChar(10), caLamViec);
+        updateRequest.input('caLamViec', sql.NVarChar(50), caLamViec);
         updateRequest.input('maNhanVienHANET', sql.NVarChar(50), maNhanVienHANET);
         
         await updateRequest.query(updateQuery);
@@ -1315,9 +1527,9 @@ router.delete('/employees/:id', async (req, res) => {
         
         // Check if employee exists
         const checkQuery = `
-            SELECT HoTen 
+            SELECT HoTen, MaNhanVienNoiBo, MaNhanVienHANET
             FROM NhanVien 
-            WHERE MaNhanVienNoiBo = @id
+            WHERE MaNhanVienNoiBo = @id OR MaNhanVienHANET = @id
         `;
         
         const checkRequest = pool.request();
@@ -1334,11 +1546,12 @@ router.delete('/employees/:id', async (req, res) => {
         const attendanceQuery = `
             SELECT COUNT(*) as count 
             FROM ChamCongDaXuLyMoi 
-            WHERE MaNhanVienNoiBo = @id
+            WHERE MaNhanVienNoiBo = @id OR MaNhanVienNoiBo = @maNhanVienNoiBo
         `;
         
         const attendanceRequest = pool.request();
         attendanceRequest.input('id', sql.NVarChar(50), id);
+        attendanceRequest.input('maNhanVienNoiBo', sql.NVarChar(50), checkResult.recordset[0].MaNhanVienNoiBo);
         const attendanceResult = await attendanceRequest.query(attendanceQuery);
         
         if (attendanceResult.recordset[0].count > 0) {
@@ -1348,7 +1561,7 @@ router.delete('/employees/:id', async (req, res) => {
         // Delete employee
         const deleteQuery = `
             DELETE FROM NhanVien 
-            WHERE MaNhanVienNoiBo = @id
+            WHERE MaNhanVienNoiBo = @id OR MaNhanVienHANET = @id
         `;
         
         const deleteRequest = pool.request();
