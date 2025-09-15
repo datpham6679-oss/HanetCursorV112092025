@@ -20,7 +20,7 @@ BEGIN
         nv.HoTen
     INTO #TempAllEvents
     FROM dulieutho AS raw WITH (NOLOCK)
-    JOIN NhanVien AS nv WITH (NOLOCK) ON raw.person_id = nv.MaNhanVienHANET
+    JOIN NhanVien AS nv WITH (NOLOCK) ON (raw.person_id = nv.MaNhanVienHANET OR raw.employee_code = nv.MaNhanVienNoiBo)
     WHERE raw.person_id IS NOT NULL 
         AND nv.MaNhanVienHANET IS NOT NULL
         AND CAST(raw.ts_vn AS DATE) >= DATEADD(DAY, -3, GETDATE()) -- Giảm xuống 3 ngày để tối ưu

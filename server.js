@@ -28,8 +28,8 @@ app.listen(PORT, '0.0.0.0', async () => {
     try {
         await poolPromise;
         console.log(`🚀 Server đang lắng nghe tại http://localhost:${PORT}`);
-        console.log(`🌐 Dashboard UI: http://192.168.11.114:${PORT}/dashboard`);
-        console.log(`📩 Đang chờ dữ liệu Hanet tại http://localhost:${PORT}/hanet-webhook`);
+        console.log(`🌐 Dashboard UI: http://117.2.136.172:${PORT}/dashboard`);
+        console.log(`📩 Đang chờ dữ liệu Hanet tại http://117.2.136.172:${PORT}/hanet-webhook`);
     } catch (error) {
         console.error('❌ Server không thể kết nối tới cơ sở dữ liệu:', error);
         console.log('⚠️ Server vẫn chạy nhưng không thể kết nối database');

@@ -84,15 +84,13 @@ export const resolveEventType = (deviceName) => {
     if (!deviceName) return 'không xác định';
     
     const device = deviceName.toLowerCase();
-    const eventTypes = {
-        vào: ['_vào', '_in'],
-        ra: ['_ra', '_out']
-    };
     
-    for (const [type, suffixes] of Object.entries(eventTypes)) {
-        if (suffixes.some(suffix => device.endsWith(suffix))) {
-            return type;
-        }
+    // Kiểm tra các pattern cụ thể
+    if (device.includes('out') || device.includes('ra')) {
+        return 'ra';
+    }
+    if (device.includes('in') || device.includes('vào')) {
+        return 'vào';
     }
     
     return 'không xác định';

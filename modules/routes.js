@@ -4,10 +4,291 @@ import ExcelJS from 'exceljs';
 import moment from 'moment-timezone';
 import fs from 'fs';
 import path from 'path';
+import fetch from 'node-fetch';
 import { sql, poolPromise } from '../db.js';
 import * as helpers from '../helpers.js';
 
 const router = express.Router();
+
+// ========================================
+// HANET CONFIGURATION (SERVER-SIDE ONLY)
+// ========================================
+// Cấu hình Hanet Developer - chỉ quản lý ở server
+let HANET_CONFIG = {
+    CLIENT_ID: process.env.HANET_CLIENT_ID || '',
+    CLIENT_SECRET: process.env.HANET_CLIENT_SECRET || '',
+    ACCESS_TOKEN: process.env.HANET_ACCESS_TOKEN || '',
+    API_BASE_URL: 'https://partner.hanet.ai',
+    WEBHOOK_URL: process.env.WEBHOOK_URL || 'http://117.2.136.172:1888/hanet-webhook',
+    IS_CONFIGURED: false
+};
+
+// Hàm kiểm tra cấu hình Hanet
+const validateHanetConfig = () => {
+    const required = ['CLIENT_ID', 'CLIENT_SECRET', 'ACCESS_TOKEN'];
+    const missing = required.filter(key => !HANET_CONFIG[key] || HANET_CONFIG[key].trim() === '');
+    
+    HANET_CONFIG.IS_CONFIGURED = missing.length === 0;
+    
+    if (missing.length > 0) {
+        console.warn(`⚠️  Cấu hình Hanet chưa đầy đủ. Thiếu: ${missing.join(', ')}`);
+        return false;
+    }
+    
+    console.log('✅ Cấu hình Hanet đã được thiết lập');
+    return true;
+};
+
+// Hàm lưu cấu hình vào file .env
+const saveConfigToEnv = (config) => {
+    try {
+        const envPath = path.join(process.cwd(), '.env');
+        let envContent = '';
+        
+        // Đọc file .env hiện tại nếu có
+        if (fs.existsSync(envPath)) {
+            envContent = fs.readFileSync(envPath, 'utf8');
+        }
+        
+        // Cập nhật hoặc thêm cấu hình Hanet
+        const envLines = envContent.split('\n');
+        const newLines = [];
+        let hanetConfigFound = false;
+        
+        for (const line of envLines) {
+            if (line.startsWith('HANET_CLIENT_ID=') || 
+                line.startsWith('HANET_CLIENT_SECRET=') || 
+                line.startsWith('HANET_ACCESS_TOKEN=') || 
+                line.startsWith('WEBHOOK_URL=')) {
+                hanetConfigFound = true;
+                continue; // Bỏ qua giá trị cũ
+            }
+            newLines.push(line);
+        }
+        
+        // Thêm cấu hình Hanet mới
+        if (!hanetConfigFound) {
+            newLines.push('\n# Hanet Configuration');
+        }
+        newLines.push(`HANET_CLIENT_ID=${config.CLIENT_ID}`);
+        newLines.push(`HANET_CLIENT_SECRET=${config.CLIENT_SECRET}`);
+        newLines.push(`HANET_ACCESS_TOKEN=${config.ACCESS_TOKEN}`);
+        newLines.push(`WEBHOOK_URL=${config.WEBHOOK_URL}`);
+        
+        fs.writeFileSync(envPath, newLines.join('\n'));
+        console.log('✅ Cấu hình Hanet đã được lưu vào file .env');
+        return true;
+    } catch (error) {
+        console.error('❌ Lỗi lưu cấu hình vào .env:', error.message);
+        return false;
+    }
+};
+
+// Kiểm tra cấu hình khi khởi động
+validateHanetConfig();
+
+// Hàm gọi Hanet API để lấy device status
+const getHanetDeviceStatus = async () => {
+    try {
+        if (!HANET_CONFIG.ACCESS_TOKEN) {
+            throw new Error('Access token chưa được cấu hình');
+        }
+
+        const response = await fetch(`${HANET_CONFIG.API_BASE_URL}/device/getList`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${HANET_CONFIG.ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`Hanet API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('Error fetching from Hanet API:', error.message);
+        throw error;
+    }
+};
+
+// ========================================
+// HANET CONFIGURATION API ENDPOINTS
+// ========================================
+
+// GET /hanet-config - Lấy cấu hình hiện tại
+router.get('/hanet-config', (req, res) => {
+    try {
+        const config = {
+            clientId: HANET_CONFIG.CLIENT_ID,
+            clientSecret: HANET_CONFIG.CLIENT_SECRET ? '***hidden***' : 'not_set',
+            accessToken: HANET_CONFIG.ACCESS_TOKEN ? '***hidden***' : 'not_set',
+            apiBaseUrl: HANET_CONFIG.API_BASE_URL,
+            webhookUrl: HANET_CONFIG.WEBHOOK_URL,
+            isConfigured: HANET_CONFIG.IS_CONFIGURED
+        };
+        
+        res.json({
+            success: true,
+            message: 'Cấu hình Hanet',
+            config: config
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi lấy cấu hình Hanet',
+            error: error.message
+        });
+    }
+});
+
+// POST /hanet-config - Cập nhật cấu hình
+router.post('/hanet-config', async (req, res) => {
+    try {
+        const { clientId, clientSecret, accessToken, webhookUrl } = req.body;
+        
+        // Validate required fields
+        if (!clientId || !clientSecret || !accessToken) {
+            return res.status(400).json({
+                success: false,
+                message: 'Client ID, Client Secret và Access Token là bắt buộc'
+            });
+        }
+        
+        // Cập nhật cấu hình
+        HANET_CONFIG.CLIENT_ID = clientId;
+        HANET_CONFIG.CLIENT_SECRET = clientSecret;
+        HANET_CONFIG.ACCESS_TOKEN = accessToken;
+        HANET_CONFIG.WEBHOOK_URL = webhookUrl || 'http://117.2.136.172:1888/hanet-webhook';
+        
+        // Cập nhật environment variables
+        process.env.HANET_CLIENT_ID = clientId;
+        process.env.HANET_CLIENT_SECRET = clientSecret;
+        process.env.HANET_ACCESS_TOKEN = accessToken;
+        process.env.WEBHOOK_URL = webhookUrl || 'http://117.2.136.172:1888/hanet-webhook';
+        
+        // Lưu vào file .env
+        const saved = saveConfigToEnv(HANET_CONFIG);
+        
+        // Kiểm tra lại cấu hình
+        validateHanetConfig();
+        
+        res.json({
+            success: true,
+            message: 'Cấu hình Hanet đã được cập nhật thành công',
+            savedToEnv: saved,
+            config: {
+                clientId: clientId,
+                clientSecret: '***hidden***',
+                accessToken: '***hidden***',
+                webhookUrl: webhookUrl || 'http://117.2.136.172:1888/hanet-webhook',
+                isConfigured: HANET_CONFIG.IS_CONFIGURED
+            }
+        });
+    } catch (error) {
+        console.error('Lỗi cập nhật cấu hình Hanet:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi cập nhật cấu hình Hanet',
+            error: error.message
+        });
+    }
+});
+
+// DELETE /hanet-config - Xóa cấu hình
+router.delete('/hanet-config', async (req, res) => {
+    try {
+        // Reset cấu hình về mặc định
+        HANET_CONFIG.CLIENT_ID = '';
+        HANET_CONFIG.CLIENT_SECRET = '';
+        HANET_CONFIG.ACCESS_TOKEN = '';
+        HANET_CONFIG.WEBHOOK_URL = 'http://117.2.136.172:1888/hanet-webhook';
+        
+        // Reset environment variables
+        process.env.HANET_CLIENT_ID = '';
+        process.env.HANET_CLIENT_SECRET = '';
+        process.env.HANET_ACCESS_TOKEN = '';
+        process.env.WEBHOOK_URL = 'http://117.2.136.172:1888/hanet-webhook';
+        
+        // Lưu vào file .env
+        const saved = saveConfigToEnv(HANET_CONFIG);
+        
+        // Kiểm tra lại cấu hình
+        validateHanetConfig();
+        
+        console.log('🗑️ Cấu hình Hanet đã được xóa');
+        
+        res.json({
+            success: true,
+            message: 'Cấu hình Hanet đã được xóa thành công',
+            savedToEnv: saved
+        });
+    } catch (error) {
+        console.error('Lỗi xóa cấu hình Hanet:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi xóa cấu hình Hanet',
+            error: error.message
+        });
+    }
+});
+
+// GET /hanet-test - Test kết nối Hanet API
+router.get('/hanet-test', async (req, res) => {
+    try {
+        if (!HANET_CONFIG.IS_CONFIGURED) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cấu hình Hanet chưa đầy đủ',
+                instructions: [
+                    '1. Truy cập https://partner.hanet.ai/',
+                    '2. Đăng nhập và tạo ứng dụng mới',
+                    '3. Lấy Client ID, Client Secret và Access Token',
+                    '4. Sử dụng POST /hanet-config để cập nhật cấu hình'
+                ]
+            });
+        }
+
+        // Test API call với Hanet
+        const testUrl = `${HANET_CONFIG.API_BASE_URL}/device/getListDevice`;
+        const response = await fetch(testUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${HANET_CONFIG.ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            res.json({
+                success: true,
+                message: 'Kết nối Hanet API thành công',
+                deviceCount: data.data ? data.data.length : 0,
+                webhookUrl: HANET_CONFIG.WEBHOOK_URL
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: 'Lỗi kết nối Hanet API',
+                status: response.status,
+                statusText: response.statusText
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi test kết nối Hanet',
+            error: error.message
+        });
+    }
+});
+
+// ========================================
+// END HANET CONFIGURATION
+// ========================================
 
 
 // Helper functions
@@ -39,21 +320,21 @@ router.post('/hanet-webhook', async (req, res) => {
     try {
         const p = parsePayload(req);
 
-        const vnFull = helpers.normalizeDateString(p.date) || helpers.epochToVNString(p.time);
-        const { tsVN, hmsVN, dmyVN } = helpers.buildTimes(vnFull);
+    const vnFull = helpers.normalizeDateString(p.date) || helpers.epochToVNString(p.time);
+    const { tsVN, hmsVN, dmyVN } = helpers.buildTimes(vnFull);
 
-        const type = helpers.resolveEventType(p.deviceName);
-        const empName = p.personName || '-';
-        const deviceName = p.deviceName || '-';
-        const deviceId = p.deviceID || '-';
-        const eventId = p.id || `${Date.now()}-${Math.random()}`;
+    const type = helpers.resolveEventType(p.deviceName);
+    const empName = p.personName || '-';
+    const deviceName = p.deviceName || '-';
+    const deviceId = p.deviceID || '-';
+    const eventId = p.id || `${Date.now()}-${Math.random()}`;
 
         const pool = await poolPromise;
         const request = pool.request();
 
         // Thêm parameters với xử lý datetime
         request.input('event_id', sql.NVarChar(100), eventId);
-        request.input('employee_code', sql.NVarChar(50), p.employee_code || null);
+        request.input('employee_code', sql.NVarChar(50), p.aliasID || p.employee_code || null);
         request.input('person_id', sql.NVarChar(50), p.personID || null);
         request.input('employee_name', sql.NVarChar(200), empName);
         request.input('device_id', sql.NVarChar(100), deviceId);
@@ -78,9 +359,26 @@ router.post('/hanet-webhook', async (req, res) => {
         request.input('ts_vn', sql.DateTime, tsVNValue);
         request.input('payload_json', sql.NVarChar(sql.MAX), JSON.stringify(p));
 
+        // Cập nhật employee_code từ aliasID nếu có
+        if (p.aliasID && p.personID) {
+            try {
+                const updateRequest = pool.request();
+                updateRequest.input('person_id', sql.NVarChar(50), p.personID);
+                updateRequest.input('employee_code', sql.NVarChar(50), p.aliasID);
+                
+                await updateRequest.query(`
+                    UPDATE dulieutho 
+                    SET employee_code = @employee_code 
+                    WHERE person_id = @person_id AND (employee_code IS NULL OR employee_code = '')
+                `);
+            } catch (error) {
+                console.error('Lỗi cập nhật employee_code:', error.message);
+            }
+        }
+
         // Thực hiện MERGE và stored procedures với timeout
         // Webhook processing started silently
-        
+
         await request.query(`
             MERGE dbo.dulieutho AS tgt
             USING (SELECT
@@ -112,6 +410,41 @@ router.post('/hanet-webhook', async (req, res) => {
         `);
 
         // MERGE completed silently
+        
+        // Tự động tạo/cập nhật nhân viên từ dữ liệu dulieutho
+        if (p.personID && p.personName) {
+            try {
+                const employeeRequest = pool.request();
+                employeeRequest.input('personID', sql.NVarChar(50), p.personID);
+                employeeRequest.input('personName', sql.NVarChar(100), p.personName);
+                employeeRequest.input('personTitle', sql.NVarChar(100), p.personTitle || null);
+                employeeRequest.input('aliasID', sql.NVarChar(50), p.aliasID || null);
+                
+                await employeeRequest.query(`
+                    MERGE dbo.NhanVien AS tgt
+                    USING (SELECT
+                        @personID AS MaNhanVienHANET,
+                        @personName AS HoTen,
+                        @personTitle AS ChucVu,
+                        @aliasID AS MaNhanVienNoiBo
+                    ) AS src
+                    ON tgt.MaNhanVienHANET = src.MaNhanVienHANET
+                    WHEN MATCHED THEN
+                        UPDATE SET
+                            tgt.HoTen = src.HoTen,
+                            tgt.ChucVu = ISNULL(src.ChucVu, tgt.ChucVu),
+                            tgt.MaNhanVienNoiBo = ISNULL(src.MaNhanVienNoiBo, tgt.MaNhanVienNoiBo),
+                            tgt.NgayCapNhat = GETDATE()
+                    WHEN NOT MATCHED THEN
+                        INSERT (HoTen, ChucVu, MaNhanVienHANET, MaNhanVienNoiBo)
+                        VALUES (src.HoTen, src.ChucVu, src.MaNhanVienHANET, src.MaNhanVienNoiBo);
+                `);
+                
+                console.log(`✅ Đã cập nhật thông tin nhân viên: ${p.personName} (${p.personID})`);
+            } catch (error) {
+                console.error('❌ Lỗi cập nhật thông tin nhân viên:', error.message);
+            }
+        }
         
         // Chạy stored procedure với timeout riêng
         const spRequest = pool.request();
@@ -293,6 +626,224 @@ router.get('/attendance-data', async (req, res) => {
     }
 });
 
+
+// POST /create-employees-from-data - Tự động tạo nhân viên từ dữ liệu dulieutho
+router.post('/create-employees-from-data', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        
+        // Lấy danh sách nhân viên duy nhất từ dulieutho
+        const result = await pool.request().query(`
+            SELECT DISTINCT
+                person_id,
+                employee_name,
+                employee_code,
+                payload_json
+            FROM dulieutho 
+            WHERE person_id IS NOT NULL 
+                AND employee_name IS NOT NULL
+                AND employee_name != '-'
+            ORDER BY person_id
+        `);
+        
+        let createdCount = 0;
+        let updatedCount = 0;
+        let errorCount = 0;
+        
+        for (const row of result.recordset) {
+            try {
+                let personTitle = null;
+                let aliasID = row.employee_code;
+                
+                // Lấy thông tin từ payload_json nếu có
+                if (row.payload_json) {
+                    try {
+                        const payload = JSON.parse(row.payload_json);
+                        personTitle = payload.personTitle || null;
+                        if (payload.aliasID) {
+                            aliasID = payload.aliasID;
+                        }
+                    } catch (parseError) {
+                        console.warn('Lỗi parse payload_json:', parseError.message);
+                    }
+                }
+                
+                const employeeRequest = pool.request();
+                employeeRequest.input('personID', sql.NVarChar(50), row.person_id);
+                employeeRequest.input('personName', sql.NVarChar(100), row.employee_name);
+                employeeRequest.input('personTitle', sql.NVarChar(100), personTitle);
+                employeeRequest.input('aliasID', sql.NVarChar(50), aliasID);
+                
+                const mergeResult = await employeeRequest.query(`
+                    MERGE dbo.NhanVien AS tgt
+                    USING (SELECT
+                        @personID AS MaNhanVienHANET,
+                        @personName AS HoTen,
+                        @personTitle AS ChucVu,
+                        @aliasID AS MaNhanVienNoiBo
+                    ) AS src
+                    ON tgt.MaNhanVienHANET = src.MaNhanVienHANET
+                    WHEN MATCHED THEN
+                        UPDATE SET
+                            tgt.HoTen = src.HoTen,
+                            tgt.ChucVu = ISNULL(src.ChucVu, tgt.ChucVu),
+                            tgt.MaNhanVienNoiBo = ISNULL(src.MaNhanVienNoiBo, tgt.MaNhanVienNoiBo),
+                            tgt.NgayCapNhat = GETDATE()
+                    WHEN NOT MATCHED THEN
+                        INSERT (HoTen, ChucVu, MaNhanVienHANET, MaNhanVienNoiBo)
+                        VALUES (src.HoTen, src.ChucVu, src.MaNhanVienHANET, src.MaNhanVienNoiBo);
+                    
+                    SELECT @@ROWCOUNT as affected_rows;
+                `);
+                
+                if (mergeResult.recordset[0].affected_rows > 0) {
+                    // Kiểm tra xem có phải là INSERT hay UPDATE
+                    const checkRequest = pool.request();
+                    checkRequest.input('personID', sql.NVarChar(50), row.person_id);
+                    const checkResult = await checkRequest.query(`
+                        SELECT COUNT(*) as count FROM NhanVien WHERE MaNhanVienHANET = @personID
+                    `);
+                    
+                    if (checkResult.recordset[0].count > 0) {
+                        updatedCount++;
+                    } else {
+                        createdCount++;
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Lỗi xử lý nhân viên:', row.person_id, error.message);
+                errorCount++;
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: `Đã xử lý ${result.recordset.length} nhân viên`,
+            createdCount,
+            updatedCount,
+            errorCount,
+            totalProcessed: result.recordset.length
+        });
+        
+    } catch (error) {
+        console.error('❌ Lỗi tạo nhân viên từ dữ liệu:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi tạo nhân viên từ dữ liệu',
+            error: error.message
+        });
+    }
+});
+
+// Cập nhật employee_code từ aliasID trong payload_json cho dữ liệu cũ
+router.post('/update-employee-codes', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT 
+                person_id,
+                payload_json
+            FROM dulieutho 
+            WHERE payload_json IS NOT NULL 
+                AND person_id IS NOT NULL
+                AND (employee_code IS NULL OR employee_code = '')
+            ORDER BY ts_vn DESC
+        `);
+        
+        let updatedCount = 0;
+        let errorCount = 0;
+        
+        for (const row of result.recordset) {
+            try {
+                const payload = JSON.parse(row.payload_json);
+                if (payload.aliasID) {
+                    const updateRequest = pool.request();
+                    updateRequest.input('person_id', sql.NVarChar(50), row.person_id);
+                    updateRequest.input('employee_code', sql.NVarChar(50), payload.aliasID);
+                    
+                    await updateRequest.query(`
+                        UPDATE dulieutho 
+                        SET employee_code = @employee_code 
+                        WHERE person_id = @person_id AND (employee_code IS NULL OR employee_code = '')
+                    `);
+                    updatedCount++;
+                }
+            } catch (error) {
+                console.error('Lỗi cập nhật employee_code cho person_id:', row.person_id, error.message);
+                errorCount++;
+            }
+        }
+        
+        res.json({
+            success: true,
+            message: `Đã cập nhật ${updatedCount} nhân viên thành công`,
+            updatedCount,
+            errorCount,
+            totalProcessed: result.recordset.length
+        });
+    } catch (error) {
+        console.error('❌ Lỗi cập nhật employee_code:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi cập nhật employee_code',
+            error: error.message
+        });
+    }
+});
+
+// Test webhook endpoint để kiểm tra dữ liệu từ Hanet
+router.get('/webhook-test', async (req, res) => {
+    try {
+        const pool = await poolPromise;
+        const result = await pool.request().query(`
+            SELECT TOP 10 
+                event_type,
+                employee_name,
+                device_id,
+                device_name,
+                ts_vn,
+                DaXuLy
+            FROM dulieutho 
+            ORDER BY ts_vn DESC
+        `);
+        
+        res.json({
+            success: true,
+            message: 'Dữ liệu webhook gần nhất',
+            count: result.recordset.length,
+            data: result.recordset
+        });
+    } catch (error) {
+        console.error('❌ Error testing webhook data:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi lấy dữ liệu webhook',
+            error: error.message
+        });
+    }
+});
+
+// Test Hanet API connection
+router.get('/hanet-test', async (req, res) => {
+    try {
+        console.log('📡 Fetching device status from Hanet API...');
+        const hanetData = await getHanetDeviceStatus();
+        
+        res.json({
+            success: true,
+            message: 'Kết nối Hanet API thành công',
+            data: hanetData
+        });
+    } catch (error) {
+        console.error('❌ Error testing Hanet API:', error.message);
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi kết nối Hanet API',
+            error: error.message
+        });
+    }
+});
 
 // Lấy danh sách thiết bị từ dữ liệu webhook
 router.get('/devices', async (req, res) => {

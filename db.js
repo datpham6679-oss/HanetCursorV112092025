@@ -15,7 +15,7 @@ const config = {
     }
 };
 
-// Tạo connection pool với error handling tốt hơn
+// Tạo connection pool
 const poolPromise = new sql.ConnectionPool(config)
     .connect()
     .then(pool => {
