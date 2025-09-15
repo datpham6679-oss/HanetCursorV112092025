@@ -7,6 +7,135 @@ import * as helpers from '../helpers.js';
 
 const router = express.Router();
 
+// ========================================
+// HANET DEVELOPER CONFIGURATION
+// ========================================
+// Cấu hình này cần được thiết lập chính xác để nhận dữ liệu từ camera Hanet
+// Truy cập: https://partner.hanet.ai/ để lấy thông tin
+
+const HANET_CONFIG = {
+    // Client ID từ Hanet Developer Portal
+    CLIENT_ID: process.env.HANET_CLIENT_ID || 'your_client_id_here',
+    
+    // Client Secret từ Hanet Developer Portal  
+    CLIENT_SECRET: process.env.HANET_CLIENT_SECRET || 'your_client_secret_here',
+    
+    // Access Token để truy cập API Hanet
+    ACCESS_TOKEN: process.env.HANET_ACCESS_TOKEN || 'your_access_token_here',
+    
+    // Refresh Token để làm mới Access Token
+    REFRESH_TOKEN: process.env.HANET_REFRESH_TOKEN || 'your_refresh_token_here',
+    
+    // Base URL cho Hanet API
+    API_BASE_URL: 'https://partner.hanet.ai',
+    
+    // Webhook URL của server này (cần đăng ký với Hanet)
+    WEBHOOK_URL: process.env.WEBHOOK_URL || 'http://192.168.11.114:1888/hanet-webhook'
+};
+
+// Hàm kiểm tra cấu hình Hanet
+const validateHanetConfig = () => {
+    const required = ['CLIENT_ID', 'CLIENT_SECRET', 'ACCESS_TOKEN'];
+    const missing = required.filter(key => 
+        !HANET_CONFIG[key] || HANET_CONFIG[key].includes('your_') || HANET_CONFIG[key].includes('_here')
+    );
+    
+    if (missing.length > 0) {
+        console.warn(`⚠️  Cấu hình Hanet chưa đầy đủ. Thiếu: ${missing.join(', ')}`);
+        console.warn('📝 Vui lòng cập nhật file .env với thông tin từ Hanet Developer Portal');
+        return false;
+    }
+    
+    console.log('✅ Cấu hình Hanet đã được thiết lập');
+    return true;
+};
+
+// Kiểm tra cấu hình khi khởi động
+validateHanetConfig();
+
+// ========================================
+// END HANET CONFIGURATION
+// ========================================
+
+// API endpoint để kiểm tra cấu hình Hanet
+router.get('/hanet-config', (req, res) => {
+    try {
+        const config = {
+            clientId: HANET_CONFIG.CLIENT_ID,
+            clientSecret: HANET_CONFIG.CLIENT_SECRET ? '***hidden***' : 'not_set',
+            accessToken: HANET_CONFIG.ACCESS_TOKEN ? '***hidden***' : 'not_set',
+            refreshToken: HANET_CONFIG.REFRESH_TOKEN ? '***hidden***' : 'not_set',
+            apiBaseUrl: HANET_CONFIG.API_BASE_URL,
+            webhookUrl: HANET_CONFIG.WEBHOOK_URL,
+            isValid: validateHanetConfig()
+        };
+        
+        res.json({
+            success: true,
+            message: 'Cấu hình Hanet',
+            config: config
+        });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi kiểm tra cấu hình Hanet',
+            error: error.message
+        });
+    }
+});
+
+// API endpoint để test kết nối Hanet
+router.get('/hanet-test', async (req, res) => {
+    try {
+        if (!validateHanetConfig()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cấu hình Hanet chưa đầy đủ',
+                instructions: [
+                    '1. Truy cập https://partner.hanet.ai/',
+                    '2. Đăng nhập và tạo ứng dụng mới',
+                    '3. Lấy Client ID và Client Secret',
+                    '4. Cập nhật file .env với thông tin này',
+                    '5. Restart server để áp dụng cấu hình'
+                ]
+            });
+        }
+
+        // Test API call với Hanet
+        const testUrl = `${HANET_CONFIG.API_BASE_URL}/device/getListDevice`;
+        const response = await fetch(testUrl, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${HANET_CONFIG.ACCESS_TOKEN}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            res.json({
+                success: true,
+                message: 'Kết nối Hanet thành công',
+                deviceCount: data.data ? data.data.length : 0,
+                webhookUrl: HANET_CONFIG.WEBHOOK_URL
+            });
+        } else {
+            res.status(400).json({
+                success: false,
+                message: 'Lỗi kết nối Hanet API',
+                status: response.status,
+                statusText: response.statusText
+            });
+        }
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi test kết nối Hanet',
+            error: error.message
+        });
+    }
+});
+
 // Helper functions
 const parsePayload = (req) => {
     let payload = req.body;

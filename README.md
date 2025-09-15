@@ -167,14 +167,23 @@ npm install
 - Chạy file `SQL Server 2012/sample_data.sql` để thêm dữ liệu mẫu
 - Chạy file `SQL Server 2012/sp_XuLyChamCongMoi_Auto.sql` để tạo stored procedure tự động
 
-### 4. Cấu hình environment
-Tạo file `.env` với nội dung:
+### 4. Cấu hình Hanet Developer
+Để nhận dữ liệu check-in/out từ camera Hanet:
+
+1. **Truy cập Hanet Developer Portal**: https://partner.hanet.ai/
+2. **Tạo ứng dụng mới** và lấy thông tin:
+   - Client ID
+   - Client Secret  
+   - Access Token
+   - Refresh Token
+3. **Cấu hình Webhook URL**: `http://192.168.11.114:1888/hanet-webhook`
+4. **Cập nhật file .env** với thông tin Hanet:
 ```env
-DB_SERVER=localhost
-DB_USER=sa
-DB_PASSWORD=Admin@123
-DB_DATABASE=hanet
-PORT=1888
+HANET_CLIENT_ID=your_client_id_here
+HANET_CLIENT_SECRET=your_client_secret_here
+HANET_ACCESS_TOKEN=your_access_token_here
+HANET_REFRESH_TOKEN=your_refresh_token_here
+WEBHOOK_URL=http://192.168.11.114:1888/hanet-webhook
 ```
 
 ### 5. Khởi động server
@@ -248,6 +257,12 @@ Truy cập `http://192.168.11.114:1888/dashboard` để sử dụng dashboard v�
 - Monitor trạng thái online/offline
 - Filter theo trạng thái
 - Refresh để cập nhật
+
+### **⚙️ Cấu hình Hanet**
+- Kiểm tra cấu hình Hanet Developer
+- Test kết nối với Hanet API
+- Hướng dẫn thiết lập webhook
+- Quản lý Client ID, Secret, Tokens
 
 ## 🔄 Ca làm việc
 

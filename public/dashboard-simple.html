@@ -310,6 +310,7 @@
             <nav class="menu">
                 <button class="menu-item active" onclick="switchTab('dashboard')">📊 Dashboard</button>
                 <button class="menu-item" onclick="switchTab('devices')">📱 Thiết bị</button>
+                <button class="menu-item" onclick="switchTab('hanet-config')">⚙️ Cấu hình Hanet</button>
                 <button class="menu-item" onclick="switchTab('activity')">📋 Hoạt động</button>
                 <button class="menu-item" onclick="switchTab('employee-detail')">👤 Chi tiết NV</button>
                 <button class="menu-item" onclick="switchTab('employee-management')">👥 Quản lý NV</button>
@@ -428,6 +429,81 @@
                         <tbody id="devices-body">
                         </tbody>
                     </table>
+                </div>
+            </div>
+
+            <!-- Hanet Configuration Tab -->
+            <div id="tab-hanet-config" class="tab-content">
+                <div class="header">
+                    <h1>⚙️ Cấu hình Hanet Developer</h1>
+                    <p>Thiết lập kết nối với camera Hanet để nhận dữ liệu check-in/out</p>
+                </div>
+
+                <!-- Configuration Status -->
+                <div id="hanet-status" class="status loading">
+                    <div class="loading-spinner"></div> Đang kiểm tra cấu hình Hanet...
+                </div>
+
+                <!-- Configuration Cards -->
+                <div class="kpis">
+                    <div class="kpi-card">
+                        <div class="kpi-title">Trạng thái kết nối</div>
+                        <div class="kpi-value" id="hanet-connection-status" style="font-size: 1.2em;">-</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Số thiết bị</div>
+                        <div class="kpi-value" id="hanet-device-count">0</div>
+                    </div>
+                    <div class="kpi-card">
+                        <div class="kpi-title">Webhook URL</div>
+                        <div class="kpi-value" id="hanet-webhook-url" style="font-size: 0.8em;">-</div>
+                    </div>
+                </div>
+
+                <!-- Configuration Details -->
+                <div class="table-container">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Cấu hình</th>
+                                <th>Trạng thái</th>
+                                <th>Giá trị</th>
+                                <th>Hành động</th>
+                            </tr>
+                        </thead>
+                        <tbody id="hanet-config-body">
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Instructions -->
+                <div class="table-container" style="margin-top: 20px;">
+                    <h3 style="padding: 20px; margin: 0; background: #f8f9fa;">📋 Hướng dẫn cấu hình</h3>
+                    <div style="padding: 20px;">
+                        <ol style="line-height: 1.8;">
+                            <li><strong>Truy cập Hanet Developer Portal:</strong> <a href="https://partner.hanet.ai/" target="_blank">https://partner.hanet.ai/</a></li>
+                            <li><strong>Đăng nhập</strong> với tài khoản Hanet của bạn</li>
+                            <li><strong>Tạo ứng dụng mới</strong> (Create New App)</li>
+                            <li><strong>Lấy thông tin:</strong>
+                                <ul style="margin-top: 10px;">
+                                    <li>Client ID</li>
+                                    <li>Client Secret</li>
+                                    <li>Access Token</li>
+                                    <li>Refresh Token</li>
+                                </ul>
+                            </li>
+                            <li><strong>Cấu hình Webhook URL:</strong> <code id="webhook-url-display">http://192.168.11.114:1888/hanet-webhook</code></li>
+                            <li><strong>Cập nhật file .env</strong> với thông tin trên</li>
+                            <li><strong>Restart server</strong> để áp dụng cấu hình</li>
+                        </ol>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="margin-top: 20px; text-align: center;">
+                    <button class="btn" onclick="testHanetConnection()">🔍 Test kết nối</button>
+                    <button class="btn" onclick="refreshHanetConfig()">🔄 Làm mới</button>
+                    <button class="btn" onclick="openHanetPortal()">🌐 Mở Hanet Portal</button>
                 </div>
             </div>
 
@@ -2392,6 +2468,134 @@
         }
 
         console.log('✅ Enhanced Dashboard loaded successfully');
+        // ========================================
+        // HANET CONFIGURATION FUNCTIONS
+        // ========================================
+        
+        async function loadHanetConfig() {
+            try {
+                const response = await fetch('/hanet-config');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateHanetConfigUI(data.config);
+                } else {
+                    showHanetError(data.message);
+                }
+            } catch (error) {
+                showHanetError('Lỗi kết nối: ' + error.message);
+            }
+        }
+        
+        function updateHanetConfigUI(config) {
+            // Update status
+            const statusEl = document.getElementById('hanet-status');
+            if (config.isValid) {
+                statusEl.className = 'status success';
+                statusEl.innerHTML = '✅ Cấu hình Hanet đã được thiết lập';
+            } else {
+                statusEl.className = 'status error';
+                statusEl.innerHTML = '⚠️ Cấu hình Hanet chưa đầy đủ';
+            }
+            
+            // Update KPI cards
+            document.getElementById('hanet-connection-status').textContent = config.isValid ? 'Kết nối' : 'Chưa kết nối';
+            document.getElementById('hanet-webhook-url').textContent = config.webhookUrl;
+            
+            // Update configuration table
+            const tbody = document.getElementById('hanet-config-body');
+            tbody.innerHTML = `
+                <tr>
+                    <td><strong>Client ID</strong></td>
+                    <td><span class="status-badge ${config.clientId && !config.clientId.includes('your_') ? 'online' : 'offline'}">${config.clientId && !config.clientId.includes('your_') ? 'Đã cấu hình' : 'Chưa cấu hình'}</span></td>
+                    <td>${config.clientId}</td>
+                    <td><button class="action-btn refresh" onclick="copyToClipboard('${config.clientId}')">Copy</button></td>
+                </tr>
+                <tr>
+                    <td><strong>Client Secret</strong></td>
+                    <td><span class="status-badge ${config.clientSecret === '***hidden***' ? 'online' : 'offline'}">${config.clientSecret === '***hidden***' ? 'Đã cấu hình' : 'Chưa cấu hình'}</span></td>
+                    <td>${config.clientSecret}</td>
+                    <td><button class="action-btn refresh" onclick="showSecretInfo()">Xem</button></td>
+                </tr>
+                <tr>
+                    <td><strong>Access Token</strong></td>
+                    <td><span class="status-badge ${config.accessToken === '***hidden***' ? 'online' : 'offline'}">${config.accessToken === '***hidden***' ? 'Đã cấu hình' : 'Chưa cấu hình'}</span></td>
+                    <td>${config.accessToken}</td>
+                    <td><button class="action-btn refresh" onclick="showTokenInfo()">Xem</button></td>
+                </tr>
+                <tr>
+                    <td><strong>Refresh Token</strong></td>
+                    <td><span class="status-badge ${config.refreshToken === '***hidden***' ? 'online' : 'offline'}">${config.refreshToken === '***hidden***' ? 'Đã cấu hình' : 'Chưa cấu hình'}</span></td>
+                    <td>${config.refreshToken}</td>
+                    <td><button class="action-btn refresh" onclick="showTokenInfo()">Xem</button></td>
+                </tr>
+                <tr>
+                    <td><strong>Webhook URL</strong></td>
+                    <td><span class="status-badge online">Đã cấu hình</span></td>
+                    <td>${config.webhookUrl}</td>
+                    <td><button class="action-btn refresh" onclick="copyToClipboard('${config.webhookUrl}')">Copy</button></td>
+                </tr>
+            `;
+        }
+        
+        function showHanetError(message) {
+            const statusEl = document.getElementById('hanet-status');
+            statusEl.className = 'status error';
+            statusEl.innerHTML = '❌ ' + message;
+        }
+        
+        async function testHanetConnection() {
+            try {
+                const statusEl = document.getElementById('hanet-status');
+                statusEl.className = 'status loading';
+                statusEl.innerHTML = '<div class="loading-spinner"></div> Đang test kết nối Hanet...';
+                
+                const response = await fetch('/hanet-test');
+                const data = await response.json();
+                
+                if (data.success) {
+                    statusEl.className = 'status success';
+                    statusEl.innerHTML = '✅ ' + data.message;
+                    document.getElementById('hanet-device-count').textContent = data.deviceCount;
+                } else {
+                    statusEl.className = 'status error';
+                    statusEl.innerHTML = '❌ ' + data.message;
+                    if (data.instructions) {
+                        statusEl.innerHTML += '<br><br><strong>Hướng dẫn:</strong><br>' + data.instructions.join('<br>');
+                    }
+                }
+            } catch (error) {
+                showHanetError('Lỗi test kết nối: ' + error.message);
+            }
+        }
+        
+        function refreshHanetConfig() {
+            loadHanetConfig();
+        }
+        
+        function openHanetPortal() {
+            window.open('https://partner.hanet.ai/', '_blank');
+        }
+        
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert('Đã copy: ' + text);
+            }).catch(() => {
+                alert('Không thể copy. Vui lòng copy thủ công: ' + text);
+            });
+        }
+        
+        function showSecretInfo() {
+            alert('Client Secret đã được ẩn để bảo mật. Vui lòng kiểm tra file .env để xem giá trị thực.');
+        }
+        
+        function showTokenInfo() {
+            alert('Token đã được ẩn để bảo mật. Vui lòng kiểm tra file .env để xem giá trị thực.');
+        }
+        
+        // ========================================
+        // END HANET CONFIGURATION FUNCTIONS
+        // ========================================
     </script>
 
     <style>
