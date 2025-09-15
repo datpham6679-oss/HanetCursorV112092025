@@ -26,10 +26,7 @@ const parsePayload = (req) => {
 };
 
 const logAttendanceEvent = (type, hmsVN, empName, deviceName, deviceId, dmyVN) => {
-    console.log(`📌 [${type}] ${hmsVN} (VN)`);
-    console.log(`👤 Nhân viên : ${empName}`);
-    console.log(`🏢 Thiết bị : ${deviceName} (ID=${deviceId})`);
-    console.log(`Thời gian: ${hmsVN} ${dmyVN}`);
+    // Webhook event processed silently
 };
 
 router.post('/hanet-webhook', async (req, res) => {
@@ -79,7 +76,7 @@ router.post('/hanet-webhook', async (req, res) => {
         request.input('payload_json', sql.NVarChar(sql.MAX), JSON.stringify(p));
 
         // Thực hiện MERGE và stored procedures với timeout
-        console.log('🔄 Bắt đầu xử lý webhook...');
+        // Webhook processing started silently
         
         await request.query(`
             MERGE dbo.dulieutho AS tgt
@@ -111,7 +108,7 @@ router.post('/hanet-webhook', async (req, res) => {
                 VALUES (src.event_id, src.employee_code, src.person_id, src.employee_name, src.device_id, src.device_name, src.event_type, src.ts_vn, src.payload_json, src.DaXuLy);
         `);
 
-        console.log('✅ MERGE thành công, đang chạy stored procedure...');
+        // MERGE completed silently
         
         // Chạy stored procedure với timeout riêng
         const spRequest = pool.request();
@@ -119,7 +116,7 @@ router.post('/hanet-webhook', async (req, res) => {
         
         try {
             await spRequest.query(`EXEC sp_XuLyChamCongMoi_Auto`);
-            console.log('✅ Stored procedure hoàn thành');
+            // Stored procedure completed silently
         } catch (spError) {
             console.error('⚠️ Lỗi stored procedure (không ảnh hưởng webhook):', spError.message);
             // Không throw error để webhook vẫn trả về thành công
@@ -242,7 +239,8 @@ router.get('/attendance-data', async (req, res) => {
                 c.GioVao,
                 c.GioRa,
                 c.ThoiGianLamViec,
-                c.TrangThai
+                c.TrangThai,
+                c.CaLamViec
             FROM ChamCongDaXuLyMoi AS c
             JOIN NhanVien AS nv ON c.MaNhanVienNoiBo = nv.MaNhanVienNoiBo
         `;
@@ -315,7 +313,7 @@ router.get('/devices', async (req, res) => {
             const minutesDiff = row.minutesSinceLastSeen;
             const hoursDiff = minutesDiff / 60;
             
-            console.log(`Device ${row.id}: minutesSinceLastSeen=${minutesDiff}`);
+            // Device status processed silently
             
             return {
                 id: row.id,
@@ -507,7 +505,7 @@ router.get('/raw-events', async (req, res) => {
         request.input('date', sql.Date, date);
         
         const result = await request.query(query);
-        console.log(`📊 Raw events query for ${personName} on ${date}:`, result.recordset.length, 'records');
+        // Raw events processed silently
         res.json(result.recordset);
         
     } catch (error) {

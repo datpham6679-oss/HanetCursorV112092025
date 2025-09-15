@@ -368,6 +368,7 @@
                                 <th>Giờ vào</th>
                                 <th>Giờ ra</th>
                                 <th>Thời gian làm việc</th>
+                                <th>Ca làm việc</th>
                                 <th>Trạng thái</th>
                             </tr>
                         </thead>
@@ -1058,13 +1059,10 @@
 
         // Update table
         function updateTable(data) {
-            console.log('📋 Updating table with data:', data);
             const tableBody = document.getElementById('table-body');
             tableBody.innerHTML = '';
             
             data.forEach(record => {
-                console.log('📝 Adding row for:', record.HoTen, record.TrangThai);
-                
                 // Convert status to display format
                 let displayStatus = record.TrangThai || 'Chưa xử lý';
                 if (displayStatus.includes('Dung gio')) {
@@ -1075,6 +1073,9 @@
                     displayStatus = 'Về sớm';
                 }
                 
+                // Format shift information
+                let shiftInfo = record.CaLamViec || record.Ca || '-';
+                
                 const row = document.createElement('tr');
                 row.innerHTML = `
                     <td>${record.MaNhanVienNoiBo || '-'}</td>
@@ -1083,11 +1084,11 @@
                     <td>${formatDateTime(record.GioVao)}</td>
                     <td>${formatDateTime(record.GioRa)}</td>
                     <td>${record.ThoiGianLamViec || 0}h</td>
+                    <td>${shiftInfo}</td>
                     <td><span class="status-badge ${getStatusClass(record.TrangThai)}">${displayStatus}</span></td>
                 `;
                 tableBody.appendChild(row);
             });
-            console.log('✅ Table updated with', data.length, 'rows');
         }
 
         // Global variable to store devices data

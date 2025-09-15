@@ -122,38 +122,41 @@ BEGIN
             FROM CaLamViec 
             WHERE TenCa = @CaThucTe;
             
-            -- Xac dinh trang thai
+            -- Xac dinh trang thai voi dieu kien nghiem ngat
             DECLARE @TrangThai NVARCHAR(50);
+            DECLARE @HopLeCheckin BIT = 0;
+            DECLARE @HopLeCheckout BIT = 0;
+            DECLARE @CungNgay BIT = 0;
             
             IF @CaThucTe = N'HC'
             BEGIN
+                -- HC: Checkin 06:00-07:30, Checkout 17:00-18:00, CUNG NGAY
+                SET @HopLeCheckin = CASE WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+                                            AND CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '07:30:00' THEN 1 ELSE 0 END;
+                SET @HopLeCheckout = CASE WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+                                             AND CAST(@GioRa AS TIME) BETWEEN '17:00:00' AND '18:00:00' THEN 1 ELSE 0 END;
+                SET @CungNgay = CASE WHEN CAST(@GioVao AS DATE) = CAST(@GioRa AS DATE) THEN 1 ELSE 0 END;
+                
                 SET @TrangThai = CASE
-                    WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-                         AND CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '07:30:00'
-                         AND CAST(@GioRa AS TIME) BETWEEN '17:00:00' AND '18:00:00'
-                    THEN N'Dung gio'
-                    WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-                         AND CAST(@GioVao AS TIME) > '07:30:00'
-                    THEN N'Di tre'
-                    WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-                         AND CAST(@GioRa AS TIME) < '17:00:00'
-                    THEN N'Ve som'
+                    WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 1 AND @CungNgay = 1 THEN N'Dung gio'
+                    WHEN @HopLeCheckin = 0 AND @HopLeCheckout = 1 AND @CungNgay = 1 THEN N'Di tre'
+                    WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 0 AND @CungNgay = 1 THEN N'Ve som'
                     ELSE N'Khong dung gio quy dinh'
                 END
             END
             ELSE IF @CaThucTe = N'SC'
             BEGIN
+                -- SC: Checkin 06:00-08:00, Checkout 16:00-18:00, CUNG NGAY
+                SET @HopLeCheckin = CASE WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+                                            AND CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '08:00:00' THEN 1 ELSE 0 END;
+                SET @HopLeCheckout = CASE WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+                                             AND CAST(@GioRa AS TIME) BETWEEN '16:00:00' AND '18:00:00' THEN 1 ELSE 0 END;
+                SET @CungNgay = CASE WHEN CAST(@GioVao AS DATE) = CAST(@GioRa AS DATE) THEN 1 ELSE 0 END;
+                
                 SET @TrangThai = CASE
-                    WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-                         AND CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '08:00:00'
-                         AND CAST(@GioRa AS TIME) BETWEEN '16:00:00' AND '18:00:00'
-                    THEN N'Dung gio'
-                    WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-                         AND CAST(@GioVao AS TIME) > '08:00:00'
-                    THEN N'Di tre'
-                    WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-                         AND CAST(@GioRa AS TIME) < '16:00:00'
-                    THEN N'Ve som'
+                    WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 1 AND @CungNgay = 1 THEN N'Dung gio'
+                    WHEN @HopLeCheckin = 0 AND @HopLeCheckout = 1 AND @CungNgay = 1 THEN N'Di tre'
+                    WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 0 AND @CungNgay = 1 THEN N'Ve som'
                     ELSE N'Khong dung gio quy dinh'
                 END
             END
@@ -161,35 +164,35 @@ BEGIN
             BEGIN
                 -- Xac dinh ca ngay hay ca dem dua tren gio vao
                 DECLARE @GioVaoTime TIME = CAST(@GioVao AS TIME);
-                DECLARE @GioRaTime TIME = CAST(@GioRa AS TIME);
                 
                 IF @GioVaoTime BETWEEN '06:00:00' AND '07:00:00'
                 BEGIN
-                    -- Ca ngay
+                    -- VHCN: Checkin 06:00-07:00, Checkout 19:00-20:00, CUNG NGAY
                     SET @CaThucTe = N'VHCN';
+                    SET @HopLeCheckin = CASE WHEN CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '07:00:00' THEN 1 ELSE 0 END;
+                    SET @HopLeCheckout = CASE WHEN CAST(@GioRa AS TIME) BETWEEN '19:00:00' AND '20:00:00' THEN 1 ELSE 0 END;
+                    SET @CungNgay = CASE WHEN CAST(@GioVao AS DATE) = CAST(@GioRa AS DATE) THEN 1 ELSE 0 END;
+                    
                     SET @TrangThai = CASE
-                        WHEN CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '07:00:00'
-                             AND CAST(@GioRa AS TIME) BETWEEN '19:00:00' AND '20:00:00'
-                        THEN N'Dung gio'
-                        WHEN CAST(@GioVao AS TIME) > '07:00:00'
-                        THEN N'Di tre'
-                        WHEN CAST(@GioRa AS TIME) < '19:00:00'
-                        THEN N'Ve som'
+                        WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 1 AND @CungNgay = 1 THEN N'Dung gio'
+                        WHEN @HopLeCheckin = 0 AND @HopLeCheckout = 1 AND @CungNgay = 1 THEN N'Di tre'
+                        WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 0 AND @CungNgay = 1 THEN N'Ve som'
                         ELSE N'Khong dung gio quy dinh'
                     END
                 END
                 ELSE IF @GioVaoTime BETWEEN '18:00:00' AND '19:00:00'
                 BEGIN
-                    -- Ca dem
+                    -- VHCD: Checkin 18:00-19:00, Checkout 07:00-08:00 (ngay hom sau)
                     SET @CaThucTe = N'VHCD';
+                    SET @HopLeCheckin = CASE WHEN CAST(@GioVao AS TIME) BETWEEN '18:00:00' AND '19:00:00' THEN 1 ELSE 0 END;
+                    SET @HopLeCheckout = CASE WHEN CAST(@GioRa AS TIME) BETWEEN '07:00:00' AND '08:00:00' 
+                                                AND CAST(@GioRa AS DATE) = DATEADD(DAY, 1, CAST(@GioVao AS DATE)) THEN 1 ELSE 0 END;
+                    SET @CungNgay = CASE WHEN CAST(@GioRa AS DATE) = CAST(@GioVao AS DATE) OR CAST(@GioRa AS DATE) = DATEADD(DAY, 1, CAST(@GioVao AS DATE)) THEN 1 ELSE 0 END;
+                    
                     SET @TrangThai = CASE
-                        WHEN CAST(@GioVao AS TIME) BETWEEN '18:00:00' AND '19:00:00'
-                             AND (CAST(@GioRa AS TIME) BETWEEN '07:00:00' AND '08:00:00' OR CAST(@GioRa AS DATE) = DATEADD(DAY, 1, CAST(@GioVao AS DATE)))
-                        THEN N'Dung gio'
-                        WHEN CAST(@GioVao AS TIME) > '19:00:00'
-                        THEN N'Di tre'
-                        WHEN CAST(@GioRa AS TIME) < '07:00:00' AND CAST(@GioRa AS DATE) = DATEADD(DAY, 1, CAST(@GioVao AS DATE))
-                        THEN N'Ve som'
+                        WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 1 AND @CungNgay = 1 THEN N'Dung gio'
+                        WHEN @HopLeCheckin = 0 AND @HopLeCheckout = 1 AND @CungNgay = 1 THEN N'Di tre'
+                        WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 0 AND @CungNgay = 1 THEN N'Ve som'
                         ELSE N'Khong dung gio quy dinh'
                     END
                 END
