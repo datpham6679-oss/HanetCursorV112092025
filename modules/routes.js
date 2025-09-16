@@ -572,7 +572,7 @@ router.post('/hanet-webhook', async (req, res) => {
         spRequest.timeout = 20000; // 20 giây timeout cho SP
         
         try {
-            await spRequest.query(`EXEC sp_XuLyChamCongMoi_Auto`);
+            await spRequest.query(`EXEC sp_XuLyChamCongMoi_Fixed`);
             // Stored procedure completed silently
         } catch (spError) {
             console.error('⚠️ Lỗi stored procedure (không ảnh hưởng webhook):', spError.message);
@@ -1353,7 +1353,11 @@ router.get('/export/report', async (req, res) => {
                 c.GioVao,
                 c.GioRa,
                 c.ThoiGianLamViec,
-                c.TrangThai
+                c.TrangThai,
+                c.DiaDiemVao,
+                c.DiaDiemRa,
+                c.NgayVao,
+                c.NgayRa
             FROM ChamCongDaXuLyMoi AS c
             JOIN NhanVien AS nv ON c.MaNhanVienNoiBo = nv.MaNhanVienNoiBo
             WHERE 1=1
@@ -1395,11 +1399,17 @@ router.get('/export/report', async (req, res) => {
             { header: 'Mã Nhân Viên', key: 'MaNhanVienNoiBo', width: 15 },
             { header: 'Họ và Tên', key: 'HoTen', width: 25 },
             { header: 'Phòng Ban', key: 'PhongBan', width: 20 },
-            { header: 'Ngày', key: 'NgayChamCong', width: 12 },
-            { header: 'Giờ Vào', key: 'GioVao', width: 15 },
-            { header: 'Giờ Ra', key: 'GioRa', width: 15 },
+            { header: 'Ca Làm Việc', key: 'CaLamViec', width: 15 },
+            { header: 'Ngày Chấm Công', key: 'NgayChamCong', width: 15 },
+            { header: 'Giờ Vào', key: 'GioVao', width: 12 },
+            { header: 'Ngày Vào', key: 'NgayVao', width: 12 },
+            { header: 'Thiết Bị Vào', key: 'DiaDiemVao', width: 20 },
+            { header: 'Giờ Ra', key: 'GioRa', width: 12 },
+            { header: 'Ngày Ra', key: 'NgayRa', width: 12 },
+            { header: 'Thiết Bị Ra', key: 'DiaDiemRa', width: 20 },
             { header: 'Thời Gian Làm Việc (giờ)', key: 'ThoiGianLamViec', width: 20 },
-            { header: 'Trạng Thái', key: 'TrangThai', width: 20 }
+            { header: 'Chốt Công', key: 'ChotCong', width: 15 },
+            { header: 'Ghi Chú', key: 'GhiChu', width: 30 }
         ];
         
         // Style header
@@ -1427,16 +1437,123 @@ router.get('/export/report', async (req, res) => {
                 const minutes = d.getUTCMinutes();
                 return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
             };
+
+            // Logic xử lý chốt công và ghi chú với điều kiện ca làm việc
+            let chotCong = '';
+            let ghiChu = '';
+            
+            // Lấy thông tin ca làm việc
+            const caLamViec = row.CaLamViec ? row.CaLamViec.toUpperCase() : '';
+            const ngayChamCong = row.NgayChamCong ? new Date(row.NgayChamCong) : null;
+            const gioRa = row.GioRa ? new Date(row.GioRa) : null;
+            
+            // Kiểm tra điều kiện tiên quyết chốt công
+            let thoaManDieuKienChotCong = false;
+            
+            if (caLamViec && ngayChamCong && gioRa) {
+                if (['SC', 'HC', 'VHCN'].includes(caLamViec)) {
+                    // Ca SC, HC, VHCN: phải chốt công trước 21h cùng ngày
+                    // Nếu làm việc qua ngày hôm sau thì không được chốt công
+                    const ngayChamCongDate = new Date(ngayChamCong);
+                    const ngayRaDate = new Date(gioRa);
+                    
+                    // Kiểm tra nếu giờ ra là ngày hôm sau
+                    if (ngayRaDate.getDate() > ngayChamCongDate.getDate() || 
+                        ngayRaDate.getMonth() > ngayChamCongDate.getMonth() ||
+                        ngayRaDate.getFullYear() > ngayChamCongDate.getFullYear()) {
+                        // Làm việc qua ngày hôm sau -> không được chốt công
+                        thoaManDieuKienChotCong = false;
+                    } else {
+                        // Cùng ngày, kiểm tra trước 21h
+                        const gioChotCong = new Date(ngayChamCong);
+                        gioChotCong.setHours(21, 0, 0, 0); // 21:00 cùng ngày
+                        
+                        if (gioRa <= gioChotCong) {
+                            thoaManDieuKienChotCong = true;
+                        }
+                    }
+                } else if (caLamViec === 'VHCD') {
+                    // Ca VHCD: phải chốt công trước 9h sáng hôm sau
+                    const gioChotCong = new Date(ngayChamCong);
+                    gioChotCong.setDate(gioChotCong.getDate() + 1); // Ngày hôm sau
+                    gioChotCong.setHours(9, 0, 0, 0); // 9:00 sáng hôm sau
+                    
+                    if (gioRa <= gioChotCong) {
+                        thoaManDieuKienChotCong = true;
+                    }
+                }
+            }
+            
+            // Xử lý trạng thái chấm công
+            if (row.TrangThai) {
+                const trangThai = row.TrangThai.toLowerCase();
+                if (trangThai.includes('đúng giờ') || trangThai.includes('on time') || trangThai.includes('đủ giờ')) {
+                    if (thoaManDieuKienChotCong) {
+                        chotCong = '1';
+                        ghiChu = 'Đúng giờ - Đã chốt công';
+                    } else {
+                        chotCong = '0';
+                        ghiChu = 'Đúng giờ - Chưa chốt công';
+                    }
+                } else if (trangThai.includes('muộn') || trangThai.includes('late')) {
+                    chotCong = '0';
+                    ghiChu = 'Đi muộn';
+                } else if (trangThai.includes('sớm') || trangThai.includes('early')) {
+                    chotCong = '0';
+                    ghiChu = 'Về sớm';
+                } else if (trangThai.includes('thiếu') || trangThai.includes('không đủ')) {
+                    chotCong = '0';
+                    ghiChu = 'Không đủ giờ';
+                } else if (trangThai.includes('khong dung gio quy dinh') || trangThai.includes('không đúng giờ quy định')) {
+                    chotCong = '0';
+                    ghiChu = 'Không đúng giờ quy định';
+                } else {
+                    chotCong = '0';
+                    ghiChu = 'Không đủ giờ';
+                }
+            } else {
+                chotCong = '0';
+                ghiChu = 'Không đủ giờ';
+            }
+            
+            // Thêm lý do cụ thể không chốt công
+            if (!thoaManDieuKienChotCong && caLamViec && ngayChamCong && gioRa) {
+                const ngayChamCongDate = new Date(ngayChamCong);
+                const ngayRaDate = new Date(gioRa);
+                
+                if (['SC', 'HC', 'VHCN'].includes(caLamViec)) {
+                    if (ngayRaDate.getDate() > ngayChamCongDate.getDate() || 
+                        ngayRaDate.getMonth() > ngayChamCongDate.getMonth() ||
+                        ngayRaDate.getFullYear() > ngayChamCongDate.getFullYear()) {
+                        ghiChu += ' - Làm việc qua ngày hôm sau';
+                    } else {
+                        ghiChu += ' - Ra sau 21h';
+                    }
+                } else if (caLamViec === 'VHCD') {
+                    ghiChu += ' - Ra sau 9h sáng hôm sau';
+                }
+            }
+            
+            // Thêm thông tin ca làm việc vào ghi chú nếu có
+            if (caLamViec) {
+                ghiChu += ` (Ca: ${caLamViec})`;
+            }
             
             worksheet.addRow({
                 MaNhanVienNoiBo: row.MaNhanVienNoiBo || '',
                 HoTen: row.HoTen || '',
                 PhongBan: row.PhongBan || '',
+                CaLamViec: caLamViec || '',
                 NgayChamCong: formatDate(row.NgayChamCong),
                 GioVao: formatTime(row.GioVao),
+                NgayVao: formatDate(row.NgayVao),
+                DiaDiemVao: row.DiaDiemVao || '',
                 GioRa: formatTime(row.GioRa),
+                NgayRa: formatDate(row.NgayRa),
+                DiaDiemRa: row.DiaDiemRa || '',
                 ThoiGianLamViec: row.ThoiGianLamViec ? row.ThoiGianLamViec.toFixed(4) : '',
-                TrangThai: row.TrangThai || ''
+                ChotCong: chotCong,
+                GhiChu: ghiChu
             });
         });
         
