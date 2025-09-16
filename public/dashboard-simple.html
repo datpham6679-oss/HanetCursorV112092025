@@ -67,24 +67,6 @@
             background: #f8d7da;
             color: #721c24;
         }
-        .device-type {
-            padding: 2px 6px;
-            border-radius: 8px;
-            font-size: 0.8em;
-            font-weight: bold;
-        }
-        .device-type.in {
-            background: #e3f2fd;
-            color: #1976d2;
-        }
-        .device-type.out {
-            background: #fff3e0;
-            color: #f57c00;
-        }
-        .device-type.unknown {
-            background: #f5f5f5;
-            color: #666;
-        }
         .action-btn {
             padding: 4px 8px;
             border: none;
@@ -300,6 +282,54 @@
         .notification-close:hover { color: #333; }
         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
         @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        /* Compact Status Messages */
+        .status {
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            margin: 5px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .status.warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeaa7;
+        }
+
+        .status.loading {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -309,7 +339,6 @@
             <div class="brand">⚡ CHECKIN 4.0</div>
             <nav class="menu">
                 <button class="menu-item active" onclick="switchTab('dashboard')">📊 Dashboard</button>
-                <button class="menu-item" onclick="switchTab('devices')">📱 Thiết bị</button>
                 <button class="menu-item" onclick="switchTab('activity')">📋 Hoạt động</button>
                 <button class="menu-item" onclick="switchTab('employee-detail')">👤 Chi tiết NV</button>
                 <button class="menu-item" onclick="switchTab('employee-management')">👥 Quản lý NV</button>
@@ -331,6 +360,7 @@
                     <h2>📊 Dashboard</h2>
                     <button class="btn" onclick="refreshData()">🔄 Làm mới</button>
                 </div>
+
 
                 <!-- KPIs -->
                 <div class="kpis">
@@ -378,58 +408,6 @@
                 </div>
             </div>
 
-            <!-- Devices Tab -->
-            <div id="tab-devices" class="tab-content">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                    <h2>📱 Thiết bị</h2>
-                    <button class="btn" onclick="loadDevices()">🔄 Làm mới</button>
-                </div>
-                
-                <!-- Device Summary Cards -->
-                <div id="device-summary" style="display: none; margin-bottom: 20px;">
-                    <div class="kpis">
-                        <div class="kpi-card">
-                            <div class="kpi-title">Tổng thiết bị</div>
-                            <div class="kpi-value" id="total-devices">0</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-title">Đang hoạt động</div>
-                            <div class="kpi-value" id="online-devices" style="color: #4CAF50;">0</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-title">Không hoạt động</div>
-                            <div class="kpi-value" id="offline-devices" style="color: #f44336;">0</div>
-                        </div>
-                        <div class="kpi-card">
-                            <div class="kpi-title">Tổng sự kiện</div>
-                            <div class="kpi-value" id="total-events">0</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <div id="devices-status" class="status loading">
-                    <span class="loading-spinner"></span> Đang tải danh sách thiết bị...
-                </div>
-                
-                <div id="devices-table" class="table-container" style="display: none;">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th style="width: 15%;">ID Thiết bị</th>
-                                <th style="width: 20%;">Tên thiết bị</th>
-                                <th style="width: 10%;">Loại</th>
-                                <th style="width: 10%;">Trạng thái</th>
-                                <th style="width: 10%;">Sự kiện</th>
-                                <th style="width: 15%;">Lần cuối</th>
-                                <th style="width: 10%;">Thời gian offline</th>
-                                <th style="width: 10%;">Hành động</th>
-                            </tr>
-                        </thead>
-                        <tbody id="devices-body">
-                        </tbody>
-                    </table>
-                </div>
-            </div>
 
 
             <!-- Activity Tab -->
@@ -939,10 +917,10 @@
             // Auto-refresh dashboard data every 30 seconds
             setInterval(() => {
                 if (currentTab === 'dashboard') {
-                    console.log('🔄 Auto-refreshing dashboard data...');
                     loadData();
                 }
-            }, 30000); // 30 seconds
+            }, 30000);
+
             
             // Setup date input formatting
             const dateInputs = ['detail-date', 'from-date', 'to-date'];
@@ -985,9 +963,6 @@
             switch(tabName) {
                 case 'dashboard':
                     loadData();
-                    break;
-                case 'devices':
-                    loadDevices();
                     break;
                 case 'activity':
                     loadActivityData();
@@ -1105,6 +1080,7 @@
             requestAnimationFrame(animate);
         }
 
+
         // Update table
         function updateTable(data) {
             const tableBody = document.getElementById('table-body');
@@ -1139,176 +1115,7 @@
             });
         }
 
-        // Global variable to store devices data
-        let allDevices = [];
         
-        // Device action functions
-        function refreshDevice(deviceId) {
-            console.log('🔄 Refreshing device:', deviceId);
-            // Reload devices data
-            loadDevices();
-        }
-        
-        function showDeviceDetails(deviceId) {
-            console.log('📋 Showing device details:', deviceId);
-            // Find device data
-            const device = allDevices?.find(d => d.id === deviceId);
-            if (device) {
-                const details = `
-📱 Chi tiết thiết bị:
-• ID: ${device.id}
-• Tên: ${device.name}
-• Trạng thái: ${device.status === 'online' ? 'Hoạt động' : 'Tắt'}
-• Tổng sự kiện: ${device.totalEvents || 0}
-• Lần cuối: ${device.last_seen ? new Date(device.last_seen).toLocaleString('vi-VN') : 'Chưa có'}
-• Lần đầu: ${device.firstSeen ? new Date(device.firstSeen).toLocaleString('vi-VN') : 'Chưa có'}
-• Thời gian offline: ${device.hoursSinceLastSeen ? Math.round(device.hoursSinceLastSeen * 10) / 10 + ' giờ' : 'N/A'}
-                `;
-                alert(details);
-            } else {
-                alert('Không tìm thấy thông tin thiết bị');
-            }
-        }
-        
-        // Load devices
-        async function loadDevices() {
-            console.log('🔄 Loading devices...');
-            const statusDiv = document.getElementById('devices-status');
-            const tableContainer = document.getElementById('devices-table');
-            
-            try {
-                statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang tải danh sách thiết bị...';
-                statusDiv.className = 'status loading';
-                
-                console.log('📡 Fetching devices from API...');
-                const response = await fetch('/devices?' + new Date().getTime());
-                console.log('📡 Response status:', response.status);
-                
-                const data = await response.json();
-                console.log('📱 Devices data received:', data);
-                
-                // Store devices data globally
-                allDevices = data;
-                
-                if (data && data.length > 0) {
-                    console.log('✅ Updating devices table with', data.length, 'devices');
-                    updateDevicesTable(data);
-                    statusDiv.innerHTML = `✅ Đã tải ${data.length} thiết bị`;
-                    statusDiv.className = 'status success';
-                    tableContainer.style.display = 'block';
-                } else {
-                    console.log('⚠️ No devices found');
-                    statusDiv.innerHTML = '⚠️ Không có thiết bị nào';
-                    statusDiv.className = 'status error';
-                    tableContainer.style.display = 'none';
-                }
-                
-            } catch (error) {
-                console.error('❌ Lỗi tải thiết bị:', error);
-                statusDiv.innerHTML = `❌ Lỗi: ${error.message}`;
-                statusDiv.className = 'status error';
-                tableContainer.style.display = 'none';
-            }
-        }
-
-        // Update devices table
-        function updateDevicesTable(data) {
-            console.log('📋 Updating devices table with data:', data);
-            const tableBody = document.getElementById('devices-body');
-            const summaryDiv = document.getElementById('device-summary');
-            tableBody.innerHTML = '';
-            
-            // Calculate summary statistics
-            const totalDevices = data.length;
-            const onlineDevices = data.filter(d => d.status === 'online').length;
-            const offlineDevices = totalDevices - onlineDevices;
-            const totalEvents = data.reduce((sum, d) => sum + (d.totalEvents || 0), 0);
-            
-            console.log('📊 Device stats:', { totalDevices, onlineDevices, offlineDevices, totalEvents });
-            
-            // Check for offline devices and show notification
-            if (offlineDevices > 0) {
-                const offlineDeviceNames = data.filter(d => d.status === 'offline').map(d => d.name).join(', ');
-                console.warn(`⚠️ Có ${offlineDevices} thiết bị offline: ${offlineDeviceNames}`);
-                
-                // Show browser notification if supported
-                if ('Notification' in window && Notification.permission === 'granted') {
-                    new Notification(`Thiết bị offline`, {
-                        body: `${offlineDevices} thiết bị đã offline: ${offlineDeviceNames}`,
-                        icon: '/favicon.ico'
-                    });
-                }
-            }
-            
-            // Update summary cards
-            document.getElementById('total-devices').textContent = totalDevices;
-            document.getElementById('online-devices').textContent = onlineDevices;
-            document.getElementById('offline-devices').textContent = offlineDevices;
-            document.getElementById('total-events').textContent = totalEvents;
-            summaryDiv.style.display = 'block';
-            
-            data.forEach(device => {
-                console.log('📱 Processing device:', device.id, device.name, 'Status:', device.status, 'Minutes since last seen:', device.minutesSinceLastSeen);
-                const row = document.createElement('tr');
-                
-                // Determine device type
-                let deviceType = 'unknown';
-                let deviceTypeClass = 'unknown';
-                if (device.device_name) {
-                    if (device.device_name.includes('_IN') || device.device_name.includes('IN')) {
-                        deviceType = 'Vào';
-                        deviceTypeClass = 'in';
-                    } else if (device.device_name.includes('_OUT') || device.device_name.includes('OUT')) {
-                        deviceType = 'Ra';
-                        deviceTypeClass = 'out';
-                    }
-                }
-                
-                // Calculate offline time
-                let offlineTime = '-';
-                if (device.status === 'offline' && device.minutesSinceLastSeen) {
-                    const minutes = device.minutesSinceLastSeen;
-                    if (minutes < 60) {
-                        offlineTime = `${minutes}m`;
-                    } else {
-                        const hours = Math.floor(minutes / 60);
-                        const remainingMinutes = minutes % 60;
-                        offlineTime = `${hours}h ${remainingMinutes}m`;
-                    }
-                }
-                
-                // Format last seen time
-                let lastSeenFormatted = '-';
-                if (device.last_seen) {
-                    const minutes = device.minutesSinceLastSeen || 0;
-                    if (minutes < 1) {
-                        lastSeenFormatted = 'Vừa xong';
-                    } else if (minutes < 60) {
-                        lastSeenFormatted = `${minutes}m trước`;
-                    } else {
-                        const hours = Math.floor(minutes / 60);
-                        const remainingMinutes = minutes % 60;
-                        lastSeenFormatted = `${hours}h ${remainingMinutes}m trước`;
-                    }
-                }
-                
-                row.innerHTML = `
-                    <td><strong>${device.id || '-'}</strong></td>
-                    <td>${device.name || '-'}</td>
-                    <td><span class="device-type ${deviceTypeClass}">${deviceType}</span></td>
-                    <td><span class="status-badge ${device.status === 'online' ? 'online' : 'offline'}">${device.status === 'online' ? 'Hoạt động' : 'Tắt'}</span></td>
-                    <td><strong>${device.totalEvents || 0}</strong></td>
-                    <td>${lastSeenFormatted}</td>
-                    <td style="color: ${device.status === 'offline' ? '#f44336' : '#4CAF50'}; font-weight: bold;">${offlineTime}</td>
-                    <td>
-                        <button class="action-btn refresh" onclick="refreshDevice('${device.id}')" title="Làm mới">🔄</button>
-                        <button class="action-btn details" onclick="showDeviceDetails('${device.id}')" title="Chi tiết">📋</button>
-                    </td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
         // Load activity data
         async function loadActivityData() {
             const statusDiv = document.getElementById('activity-status');
@@ -1882,13 +1689,8 @@
             const selectedDisplay = document.getElementById('modal-selected-employee-display');
             const confirmBtn = document.getElementById('modal-confirm-btn');
             
-            console.log('🔍 Setting up modal employee search with', allEmployeeData.length, 'employees');
-            console.log('📊 Sample employee data:', allEmployeeData.slice(0, 3));
-            
             // Function to perform search
             function performModalSearch(query, searchType) {
-                console.log(`🔍 Modal search: "${query}" (${searchType})`);
-                
                 if (!query || query.length < 1) {
                     searchResults.style.display = 'none';
                     return;
@@ -2041,22 +1843,17 @@
                     // Same date - use date parameter
                     const apiDate = convertDateToAPI(fromDate);
                     queryParams.append('date', apiDate);
-                    console.log('📅 Single date:', fromDate, '->', apiDate);
                 } else {
                     // Date range - use startDate and endDate
                     if (fromDate) {
                         const apiFromDate = convertDateToAPI(fromDate);
                         queryParams.append('startDate', apiFromDate);
-                        console.log('📅 From date conversion:', fromDate, '->', apiFromDate);
                     }
                     if (toDate) {
                         const apiToDate = convertDateToAPI(toDate);
                         queryParams.append('endDate', apiToDate);
-                        console.log('📅 To date conversion:', toDate, '->', apiToDate);
                     }
                 }
-                
-                console.log('🔍 Query parameters:', queryParams.toString());
                 
                 const response = await fetch(`/attendance-data?${queryParams.toString()}`);
                 if (!response.ok) {
@@ -2064,22 +1861,21 @@
                 }
                 
                 const data = await response.json();
-                console.log(`📊 Báo cáo nhân viên ${employee.HoTen}:`, data);
                 
                 if (data && data.length > 0) {
                     updateReportPreview(data);
-                    statusDiv.innerHTML = `✅ Đã tải ${data.length} bản ghi cho ${employee.HoTen}`;
+                    statusDiv.innerHTML = `✅ ${data.length} bản ghi`;
                     statusDiv.className = 'status success';
                     previewDiv.style.display = 'block';
                 } else {
-                    statusDiv.innerHTML = `⚠️ Không có dữ liệu cho ${employee.HoTen}`;
+                    statusDiv.innerHTML = `⚠️ Không có dữ liệu`;
                     statusDiv.className = 'status warning';
                     previewDiv.style.display = 'none';
                 }
                 
             } catch (error) {
                 console.error(`❌ Lỗi tải báo cáo ${employee.HoTen}:`, error);
-                statusDiv.innerHTML = `❌ Lỗi tải báo cáo ${employee.HoTen}: ${error.message}`;
+                statusDiv.innerHTML = `❌ Lỗi: ${error.message}`;
                 statusDiv.className = 'status error';
                 previewDiv.style.display = 'none';
             }
@@ -2360,8 +2156,6 @@
             const summaryDiv = document.getElementById('employee-summary');
             const timelineDiv = document.getElementById('employee-timeline');
             
-            console.log('🔍 Debug loadEmployeeDetail:', { selectedEmployeeId, selectedEmployeeName, selectedDate });
-            
             if ((!selectedEmployeeName && !selectedEmployeeId) || !selectedDate) {
                 statusDiv.innerHTML = '⚠️ Vui lòng chọn nhân viên và ngày';
                 statusDiv.className = 'status error';
@@ -2377,7 +2171,6 @@
             
             // Convert DD/MM/YYYY to YYYY-MM-DD for API
             const apiDate = convertDateToAPI(selectedDate);
-            console.log('📅 Converted date:', apiDate);
             
             try {
                 statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang tải chi tiết nhân viên...';
@@ -2399,26 +2192,21 @@
                     }
                 }
                 
-                console.log('🔍 Query parameters:', queryParams);
-                
                 // Load raw data from dulieutho table only
                 const rawResponse = await fetch(`/raw-events?${queryParams}`);
                 const rawData = rawResponse.ok ? await rawResponse.json() : [];
-                
-                console.log('📊 Raw data response:', rawResponse.status, rawData);
-                console.log('📊 Dữ liệu chi tiết từ dulieutho:', rawData);
                 
                 if (rawData.length > 0) {
                     updateEmployeeSummaryFromRaw(rawData);
                     updateEmployeeTimeline(rawData, selectedEmployeeName || selectedEmployeeId, selectedDate);
                     
-                    statusDiv.innerHTML = `✅ Đã tải chi tiết cho ${selectedEmployeeName || selectedEmployeeId} ngày ${selectedDate}`;
+                    statusDiv.innerHTML = `✅ ${rawData.length} bản ghi`;
                     statusDiv.className = 'status success';
                     summaryDiv.style.display = 'block';
                     timelineDiv.style.display = 'block';
                 } else {
-                    statusDiv.innerHTML = `⚠️ Không có dữ liệu cho ${selectedEmployeeName || selectedEmployeeId} ngày ${selectedDate}`;
-                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = `⚠️ Không có dữ liệu`;
+                    statusDiv.className = 'status warning';
                     summaryDiv.style.display = 'none';
                     timelineDiv.style.display = 'none';
                 }
@@ -2434,8 +2222,6 @@
 
         // Update employee summary from raw data (dulieutho table)
         function updateEmployeeSummaryFromRaw(rawData) {
-            console.log('📊 updateEmployeeSummaryFromRaw called with:', rawData);
-            
             // Count check-ins and check-outs based on device_name
             const checkins = rawData.filter(item => {
                 const deviceName = (item.device_name || '').toLowerCase();
@@ -2491,12 +2277,8 @@
 
         // Update employee summary (legacy function - kept for compatibility)
         function updateEmployeeSummary(processedData, rawData) {
-            console.log('📊 updateEmployeeSummary called with:', { processedData, rawData });
-            
             const checkins = rawData.filter(item => item.device_name && item.device_name.includes('_IN')).length;
             const checkouts = rawData.filter(item => item.device_name && item.device_name.includes('_OUT')).length;
-            
-            console.log('🔢 Check-ins/outs:', { checkins, checkouts });
             
             // Calculate total hours from processed data
             let totalHours = 0;
@@ -2518,14 +2300,10 @@
             const totalHoursEl = document.getElementById('total-hours');
             const statusCountEl = document.getElementById('status-count');
             
-            console.log('🎯 Updating UI elements:', { totalCheckinsEl, totalCheckoutsEl, totalHoursEl, statusCountEl });
-            
             if (totalCheckinsEl) totalCheckinsEl.textContent = checkins;
             if (totalCheckoutsEl) totalCheckoutsEl.textContent = checkouts;
             if (totalHoursEl) totalHoursEl.textContent = totalHours.toFixed(2) + 'h';
             if (statusCountEl) statusCountEl.textContent = status;
-            
-            console.log('✅ Summary updated:', { checkins, checkouts, totalHours, status });
         }
 
         // Update employee timeline
@@ -2734,7 +2512,6 @@
             const inputElement = document.getElementById(inputId);
             if (inputElement) {
                 inputElement.value = formattedDate;
-                console.log('✅ Updated input:', inputId, 'with value:', formattedDate);
             } else {
                 console.error('❌ Input element not found:', inputId);
             }
@@ -2755,7 +2532,6 @@
             const inputElement = document.getElementById(inputId);
             if (inputElement) {
                 inputElement.value = formattedDate;
-                console.log('✅ Updated input:', inputId, 'with value:', formattedDate);
             } else {
                 console.error('❌ Input element not found:', inputId);
             }
@@ -2812,12 +2588,6 @@
             }
         }, 30000);
         
-        // Auto refresh devices every 10 seconds for real-time monitoring
-        setInterval(() => {
-            if (currentTab === 'devices') {
-                loadDevices();
-            }
-        }, 10000);
 
         // Employee Management Functions
         async function loadEmployeeManagement() {
@@ -3176,17 +2946,6 @@
             color: white; 
         }
         
-        .device-info { 
-            background: linear-gradient(135deg, #e3f2fd, #bbdefb); 
-            color: #1976d2; 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            font-size: 0.85em; 
-            font-weight: 500;
-            display: inline-block;
-            text-align: center;
-            min-width: 80px;
-        }
         
         /* Search box styles */
         #employee-search:focus {

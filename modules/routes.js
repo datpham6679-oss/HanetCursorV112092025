@@ -5,7 +5,7 @@ import moment from 'moment-timezone';
 import fs from 'fs';
 import path from 'path';
 import fetch from 'node-fetch';
-import { sql, poolPromise } from '../db.js';
+import sql from 'mssql';
 import * as helpers from '../helpers.js';
 
 const router = express.Router();
@@ -251,8 +251,8 @@ router.get('/hanet-test', async (req, res) => {
             });
         }
 
-        // Test API call với Hanet
-        const testUrl = `${HANET_CONFIG.API_BASE_URL}/device/getListDevice`;
+        // Test API call với Hanet - thử endpoint khác
+        const testUrl = `${HANET_CONFIG.API_BASE_URL}/device/getList`;
         const response = await fetch(testUrl, {
             method: 'GET',
             headers: {
@@ -289,7 +289,6 @@ router.get('/hanet-test', async (req, res) => {
 // ========================================
 // END HANET CONFIGURATION
 // ========================================
-
 
 // Helper functions
 const parsePayload = (req) => {
@@ -354,7 +353,7 @@ router.post('/hanet-webhook', async (req, res) => {
                     .replace(/H�/g, 'Hà')
                     .replace(/\bDuc\b/g, 'Đức')
                     .replace(/\bDung\b/g, 'Dũng');
-            } catch (e) {
+        } catch (e) {
                 return str;
             }
         };
@@ -379,8 +378,8 @@ router.post('/hanet-webhook', async (req, res) => {
             p.deviceName = fixEncoding(p.deviceName);
             if (originalDevice !== p.deviceName) {
                 console.log(`🔧 Fixed encoding: "${originalDevice}" → "${p.deviceName}"`);
-            }
         }
+    }
 
     const vnFull = helpers.normalizeDateString(p.date) || helpers.epochToVNString(p.time);
     const { tsVN, hmsVN, dmyVN } = helpers.buildTimes(vnFull);
@@ -431,7 +430,28 @@ router.post('/hanet-webhook', async (req, res) => {
     console.log(`   DeviceID: ${p.deviceID || ''}`);
     console.log(`   DeviceName: ${safeString(p.deviceName || '')}`);
 
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        let pool;
+        try {
+            pool = await sql.connect(config);
+            if (!pool) {
+                throw new Error('Database connection failed');
+            }
+        } catch (error) {
+            console.error('❌ Lỗi kết nối database:', error.message);
+            return res.status(500).json({ error: 'Lỗi kết nối database: ' + error.message });
+        }
+        
         const request = pool.request();
 
         // Thêm parameters với xử lý datetime
@@ -531,8 +551,8 @@ router.post('/hanet-webhook', async (req, res) => {
                         @aliasID AS MaNhanVienNoiBo
                     ) AS src
                     ON tgt.MaNhanVienHANET = src.MaNhanVienHANET
-                    WHEN MATCHED THEN
-                        UPDATE SET
+            WHEN MATCHED THEN
+                UPDATE SET
                             tgt.HoTen = src.HoTen,
                             tgt.ChucVu = ISNULL(src.ChucVu, tgt.ChucVu),
                             tgt.MaNhanVienNoiBo = ISNULL(src.MaNhanVienNoiBo, tgt.MaNhanVienNoiBo),
@@ -562,6 +582,7 @@ router.post('/hanet-webhook', async (req, res) => {
         
         logAttendanceEvent(type, hmsVN, empName, deviceName, deviceId, dmyVN);
         
+        await pool.close();
         return res.status(200).json({ ok: true });
         
     } catch (error) {
@@ -572,11 +593,23 @@ router.post('/hanet-webhook', async (req, res) => {
 
 router.get('/departments', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         const result = await pool.request().query(
             'SELECT DISTINCT PhongBan FROM NhanVien WHERE PhongBan IS NOT NULL AND PhongBan != \'\' ORDER BY PhongBan;'
         );
         const departments = result.recordset.map(row => row.PhongBan);
+        await pool.close();
         res.json(departments);
     } catch (error) {
         console.error('Lỗi lấy danh sách phòng ban:', error.message);
@@ -586,7 +619,28 @@ router.get('/departments', async (req, res) => {
 
 router.get('/report/excel', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        let pool;
+        try {
+            pool = await sql.connect(config);
+            if (!pool) {
+                throw new Error('Database connection failed');
+            }
+        } catch (error) {
+            console.error('❌ Lỗi kết nối database:', error.message);
+            return res.status(500).json({ error: 'Lỗi kết nối database: ' + error.message });
+        }
+        
         const request = pool.request();
 
         const result = await request.query(`
@@ -667,13 +721,24 @@ router.get('/report/excel', async (req, res) => {
 
 router.get('/attendance-data', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         const { startDate, endDate, personId, status, department, date } = req.query;
 
-               let query = `
-                   SELECT
-                       nv.MaNhanVienNoiBo,
-                       nv.HoTen,
+        let query = `
+            SELECT
+                nv.MaNhanVienNoiBo,
+                nv.HoTen,
                        CAST(raw.ts_vn AS DATE) AS NgayChamCong,
                        CASE WHEN raw.event_type = 'vào' THEN raw.ts_vn ELSE NULL END AS GioVao,
                        CASE WHEN raw.event_type = 'ra' THEN raw.ts_vn ELSE NULL END AS GioRa,
@@ -695,8 +760,6 @@ router.get('/attendance-data', async (req, res) => {
                      AND (raw.person_id IS NOT NULL OR raw.employee_code IS NOT NULL)
                `;
 
-        console.log('🔍 API /attendance-data called with params:', { startDate, endDate, personId, status, department, date });
-        
         const whereClauses = [];
         const request = pool.request();
 
@@ -742,11 +805,8 @@ router.get('/attendance-data', async (req, res) => {
         }
                query += ' ORDER BY ThoiGianXuLy DESC;';
 
-        console.log('🔍 Final query:', query);
-        console.log('🔍 Query parameters:', request.parameters);
-        
         const result = await request.query(query);
-        console.log('🔍 Query result count:', result.recordset.length);
+        await pool.close();
         res.json(result.recordset);
     } catch (error) {
         console.error('Lỗi lấy dữ liệu chấm công:', error.message);
@@ -758,7 +818,18 @@ router.get('/attendance-data', async (req, res) => {
 // POST /restore-nhanvien - Khôi phục dữ liệu nhân viên từ backup
 router.post('/restore-nhanvien', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         
         // Kiểm tra bảng backup có tồn tại không
         const checkBackup = await pool.request().query(`
@@ -782,6 +853,7 @@ router.post('/restore-nhanvien', async (req, res) => {
             FROM NhanVien_Backup
         `);
         
+        await pool.close();
         res.json({
             success: true,
             message: `Đã khôi phục ${result.rowsAffected[0]} nhân viên từ backup`,
@@ -801,7 +873,18 @@ router.post('/restore-nhanvien', async (req, res) => {
 // POST /backup-nhanvien - Tạo backup dữ liệu nhân viên
 router.post('/backup-nhanvien', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         
         // Xóa bảng backup cũ nếu tồn tại
         await pool.request().query(`
@@ -814,6 +897,7 @@ router.post('/backup-nhanvien', async (req, res) => {
             SELECT * INTO NhanVien_Backup FROM NhanVien
         `);
         
+        await pool.close();
         res.json({
             success: true,
             message: `Đã tạo backup với ${result.rowsAffected[0]} nhân viên`,
@@ -833,7 +917,18 @@ router.post('/backup-nhanvien', async (req, res) => {
 // POST /create-employees-from-data - Tự động tạo nhân viên từ dữ liệu dulieutho
 router.post('/create-employees-from-data', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         
         // Lấy danh sách nhân viên duy nhất từ dulieutho
         const result = await pool.request().query(`
@@ -920,6 +1015,7 @@ router.post('/create-employees-from-data', async (req, res) => {
             }
         }
         
+        await pool.close();
         res.json({
             success: true,
             message: `Đã xử lý ${result.recordset.length} nhân viên`,
@@ -942,7 +1038,18 @@ router.post('/create-employees-from-data', async (req, res) => {
 // Cập nhật employee_code từ aliasID trong payload_json cho dữ liệu cũ
 router.post('/update-employee-codes', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         const result = await pool.request().query(`
             SELECT 
                 person_id,
@@ -978,6 +1085,7 @@ router.post('/update-employee-codes', async (req, res) => {
             }
         }
         
+        await pool.close();
         res.json({
             success: true,
             message: `Đã cập nhật ${updatedCount} nhân viên thành công`,
@@ -998,7 +1106,18 @@ router.post('/update-employee-codes', async (req, res) => {
 // Test webhook endpoint để kiểm tra dữ liệu từ Hanet
 router.get('/webhook-test', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         const result = await pool.request().query(`
             SELECT TOP 10 
                 event_type,
@@ -1011,6 +1130,7 @@ router.get('/webhook-test', async (req, res) => {
             ORDER BY ts_vn DESC
         `);
         
+        await pool.close();
         res.json({
             success: true,
             message: 'Dữ liệu webhook gần nhất',
@@ -1027,31 +1147,23 @@ router.get('/webhook-test', async (req, res) => {
     }
 });
 
-// Test Hanet API connection
-router.get('/hanet-test', async (req, res) => {
-    try {
-        console.log('📡 Fetching device status from Hanet API...');
-        const hanetData = await getHanetDeviceStatus();
-        
-        res.json({
-            success: true,
-            message: 'Kết nối Hanet API thành công',
-            data: hanetData
-        });
-    } catch (error) {
-        console.error('❌ Error testing Hanet API:', error.message);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi kết nối Hanet API',
-            error: error.message
-        });
-    }
-});
+// Test Hanet API connection - REMOVED DUPLICATE ENDPOINT
 
 // Lấy danh sách thiết bị từ dữ liệu webhook
 router.get('/devices', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         const result = await pool.request().query(`
             SELECT 
                 device_id as id,
@@ -1084,6 +1196,7 @@ router.get('/devices', async (req, res) => {
             };
         });
         
+        await pool.close();
         res.json(devices);
     } catch (error) {
         console.error('Lỗi lấy danh sách thiết bị:', error.message);
@@ -1101,9 +1214,20 @@ router.get('/export/report', async (req, res) => {
             return res.status(400).json({ error: 'Thiếu loại báo cáo' });
         }
         
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         let query = `
-            SELECT 
+            SELECT
                 nv.MaNhanVienNoiBo,
                 nv.HoTen,
                 nv.PhongBan,
@@ -1116,14 +1240,14 @@ router.get('/export/report', async (req, res) => {
             JOIN NhanVien AS nv ON c.MaNhanVienNoiBo = nv.MaNhanVienNoiBo
             WHERE 1=1
         `;
-        
+
         const request = pool.request();
-        
+
         if (startDate) {
             query += ` AND c.NgayChamCong >= @startDate`;
             request.input('startDate', sql.Date, startDate);
         }
-        
+
         if (endDate) {
             query += ` AND c.NgayChamCong <= @endDate`;
             request.input('endDate', sql.Date, endDate);
@@ -1133,7 +1257,7 @@ router.get('/export/report', async (req, res) => {
             query += ` AND nv.PhongBan = @department`;
             request.input('department', sql.NVarChar(100), department);
         }
-        
+
         if (personId) {
             query += ` AND nv.MaNhanVienNoiBo LIKE @personId`;
             request.input('personId', sql.NVarChar(50), `%${personId}%`);
@@ -1231,7 +1355,18 @@ router.get('/raw-events', async (req, res) => {
             return res.status(400).json({ error: 'Thiếu tên nhân viên/mã nhân viên hoặc ngày' });
         }
         
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         
         // Build dynamic query based on available parameters
         let whereConditions = [];
@@ -1280,9 +1415,9 @@ router.get('/raw-events', async (req, res) => {
         `;
         
         request.input('date', sql.Date, date);
-        
+
         const result = await request.query(query);
-        console.log('🔍 Raw events query executed:', { personName, personId, employeeCode, date, resultCount: result.recordset.length });
+        await pool.close();
         res.json(result.recordset);
         
     } catch (error) {
@@ -1296,7 +1431,19 @@ router.get('/raw-events', async (req, res) => {
 // Get all employees
 router.get('/employees', async (req, res) => {
     try {
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
+        
         const query = `
             SELECT 
                 ID,
@@ -1314,6 +1461,7 @@ router.get('/employees', async (req, res) => {
         `;
         
         const result = await pool.request().query(query);
+        await pool.close();
         res.json(result.recordset);
         
     } catch (error) {
@@ -1326,7 +1474,18 @@ router.get('/employees', async (req, res) => {
 router.get('/employees/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         
         const query = `
             SELECT 
@@ -1352,6 +1511,7 @@ router.get('/employees/:id', async (req, res) => {
             return res.status(404).json({ error: 'Không tìm thấy nhân viên' });
         }
         
+        await pool.close();
         res.json(result.recordset[0]);
         
     } catch (error) {
@@ -1378,7 +1538,18 @@ router.post('/add-employee', async (req, res) => {
             return res.status(400).json({ error: 'Thiếu thông tin bắt buộc' });
         }
         
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         
         // Check if employee already exists
         const checkQuery = `
@@ -1443,6 +1614,7 @@ router.post('/add-employee', async (req, res) => {
         await insertRequest.query(insertQuery);
         
         console.log('✅ Thêm nhân viên thành công:', hoTen);
+        await pool.close();
         res.json({ message: 'Thêm nhân viên thành công', employee: { hoTen, maNhanVienNoiBo } });
         
     } catch (error) {
@@ -1469,7 +1641,18 @@ router.put('/employees/:id', async (req, res) => {
             return res.status(400).json({ error: 'Thiếu thông tin bắt buộc' });
         }
         
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         
         // Check if employee exists
         const checkQuery = `
@@ -1511,6 +1694,7 @@ router.put('/employees/:id', async (req, res) => {
         await updateRequest.query(updateQuery);
         
         console.log('✅ Cập nhật nhân viên thành công:', hoTen);
+        await pool.close();
         res.json({ message: 'Cập nhật nhân viên thành công', employee: { hoTen, maNhanVienNoiBo: id } });
         
     } catch (error) {
@@ -1523,7 +1707,18 @@ router.put('/employees/:id', async (req, res) => {
 router.delete('/employees/:id', async (req, res) => {
     try {
         const { id } = req.params;
-        const pool = await poolPromise;
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost', // Sử dụng SQL Authentication
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
         
         // Check if employee exists
         const checkQuery = `
@@ -1569,6 +1764,7 @@ router.delete('/employees/:id', async (req, res) => {
         await deleteRequest.query(deleteQuery);
         
         console.log('✅ Xóa nhân viên thành công:', hoTen);
+        await pool.close();
         res.json({ message: 'Xóa nhân viên thành công', employee: { hoTen, maNhanVienNoiBo: id } });
         
     } catch (error) {
