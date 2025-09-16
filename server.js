@@ -41,6 +41,7 @@ app.use(express.static('public'));
 // Routes
 app.get('/', (req, res) => res.redirect('/dashboard'));
 app.get('/dashboard', (req, res) => res.sendFile('dashboard-simple.html', { root: 'public' }));
+app.get('/dashboard-new', (req, res) => res.sendFile('dashboard-new.html', { root: 'public' }));
 app.use('/', hanetRoutes);
 
 // Khởi động server

@@ -26,7 +26,7 @@ let HANET_CONFIG = {
 // Hàm kiểm tra cấu hình Hanet
 const validateHanetConfig = () => {
     const required = ['CLIENT_ID', 'CLIENT_SECRET', 'ACCESS_TOKEN'];
-    const missing = required.filter(key => !HANET_CONFIG[key] || HANET_CONFIG[key].trim() === '');
+    const missing = required.filter(key => !HANET_CONFIG[key] || HANET_CONFIG[key].trim() === '' || HANET_CONFIG[key] === 'your_client_id_here' || HANET_CONFIG[key] === 'your_client_secret_here' || HANET_CONFIG[key] === 'your_access_token_here');
     
     HANET_CONFIG.IS_CONFIGURED = missing.length === 0;
     
@@ -736,27 +736,22 @@ router.get('/attendance-data', async (req, res) => {
 
         let query = `
             SELECT
-                nv.MaNhanVienNoiBo,
-                nv.HoTen,
-                       CAST(raw.ts_vn AS DATE) AS NgayChamCong,
-                       CASE WHEN raw.event_type = 'vào' THEN raw.ts_vn ELSE NULL END AS GioVao,
-                       CASE WHEN raw.event_type = 'ra' THEN raw.ts_vn ELSE NULL END AS GioRa,
-                       NULL AS ThoiGianLamViec,
-                       CASE 
-                           WHEN raw.event_type = 'vào' THEN 'Check-in'
-                           WHEN raw.event_type = 'ra' THEN 'Check-out'
-                           ELSE raw.event_type
-                       END AS TrangThai,
-                       nv.CaLamViec,
-                       CASE WHEN raw.event_type = 'vào' THEN raw.device_name ELSE NULL END AS DiaDiemVao,
-                       CASE WHEN raw.event_type = 'ra' THEN raw.device_name ELSE NULL END AS DiaDiemRa,
-                       raw.ts_vn AS ThoiGianXuLy
-                   FROM dulieutho AS raw
-                   LEFT JOIN NhanVien AS nv ON (raw.person_id = nv.MaNhanVienHANET OR raw.employee_code = nv.MaNhanVienNoiBo)
-                   WHERE raw.employee_name IS NOT NULL 
-                     AND raw.employee_name != '' 
-                     AND raw.employee_name != '-'
-                     AND (raw.person_id IS NOT NULL OR raw.employee_code IS NOT NULL)
+                ccdxm.MaNhanVienNoiBo,
+                ccdxm.TenNhanVien AS HoTen,
+                ccdxm.NgayChamCong,
+                ccdxm.GioVao,
+                ccdxm.GioRa,
+                ccdxm.ThoiGianLamViec,
+                ccdxm.TrangThai,
+                ccdxm.CaLamViec,
+                ccdxm.DiaDiemVao,
+                ccdxm.DiaDiemRa,
+                ccdxm.ThoiGianXuLy
+            FROM chamcongdaxulymoi AS ccdxm
+            WHERE ccdxm.MaNhanVienNoiBo IS NOT NULL 
+              AND ccdxm.MaNhanVienNoiBo != ''
+              AND ccdxm.TenNhanVien IS NOT NULL
+              AND ccdxm.TenNhanVien != ''
                `;
 
         const whereClauses = [];
@@ -764,45 +759,41 @@ router.get('/attendance-data', async (req, res) => {
 
         // Thêm điều kiện WHERE
         if (date) {
-            whereClauses.push(`CAST(raw.ts_vn AS DATE) = @date`);
+            whereClauses.push(`ccdxm.NgayChamCong = @date`);
             request.input('date', sql.Date, date);
         }
         if (startDate) {
-            whereClauses.push(`CAST(raw.ts_vn AS DATE) >= @startDate`);
+            whereClauses.push(`ccdxm.NgayChamCong >= @startDate`);
             request.input('startDate', sql.Date, startDate);
         }
         if (endDate) {
-            whereClauses.push(`CAST(raw.ts_vn AS DATE) <= @endDate`);
+            whereClauses.push(`ccdxm.NgayChamCong <= @endDate`);
             request.input('endDate', sql.Date, endDate);
         }
         if (personId) {
             // Try to find by name or employee code
             whereClauses.push(`(
-                nv.HoTen = @personId 
-                OR nv.HoTen LIKE @personIdLike
-                OR raw.employee_name = @personId
-                OR raw.employee_name LIKE @personIdLike
-                OR nv.MaNhanVienNoiBo = @personId
-                OR nv.MaNhanVienHANET = @personId
-                OR raw.employee_code = @personId
-                OR raw.person_id = @personId
+                ccdxm.TenNhanVien = @personId 
+                OR ccdxm.TenNhanVien LIKE @personIdLike
+                OR ccdxm.MaNhanVienNoiBo = @personId
+                OR ccdxm.MaNhanVienNoiBo LIKE @personIdLike
             )`);
             request.input('personId', sql.NVarChar(100), personId);
             request.input('personIdLike', sql.NVarChar(100), `%${personId}%`);
         }
         if (status) {
-            whereClauses.push(`LTRIM(RTRIM(raw.event_type)) = @status`);
-            request.input('status', sql.NVarChar(50), status.trim());
+            whereClauses.push(`ccdxm.TrangThai LIKE @status`);
+            request.input('status', sql.NVarChar(50), `%${status}%`);
         }
         if (department) {
-            whereClauses.push(`nv.PhongBan = @department`);
-            request.input('department', sql.NVarChar(100), department);
+            whereClauses.push(`ccdxm.CaLamViec LIKE @department`);
+            request.input('department', sql.NVarChar(100), `%${department}%`);
         }
 
         if (whereClauses.length > 0) {
             query += ' AND ' + whereClauses.join(' AND ');
         }
-               query += ' ORDER BY ThoiGianXuLy DESC;';
+               query += ' ORDER BY ccdxm.NgayChamCong DESC, ccdxm.ThoiGianXuLy DESC;';
 
         const result = await request.query(query);
         await pool.close();
@@ -810,6 +801,179 @@ router.get('/attendance-data', async (req, res) => {
     } catch (error) {
         console.error('Lỗi lấy dữ liệu chấm công:', error.message);
         res.status(500).json({ error: 'Lỗi máy chủ khi lấy dữ liệu' });
+    }
+});
+
+// GET /activity-data - Lấy dữ liệu hoạt động từ bảng chamcongdaxulymoi
+router.get('/activity-data', async (req, res) => {
+    try {
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost',
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
+        const { startDate, endDate, personId, status, department, date } = req.query;
+
+        let query = `
+            SELECT
+                ccdxm.MaNhanVienNoiBo,
+                ccdxm.TenNhanVien AS HoTen,
+                ccdxm.NgayChamCong,
+                ccdxm.GioVao,
+                ccdxm.GioRa,
+                ccdxm.ThoiGianLamViec,
+                ccdxm.TrangThai,
+                ccdxm.CaLamViec,
+                ccdxm.DiaDiemVao,
+                ccdxm.DiaDiemRa,
+                ccdxm.ThoiGianXuLy
+            FROM chamcongdaxulymoi AS ccdxm
+            WHERE ccdxm.MaNhanVienNoiBo IS NOT NULL 
+              AND ccdxm.MaNhanVienNoiBo != ''
+              AND ccdxm.TenNhanVien IS NOT NULL
+              AND ccdxm.TenNhanVien != ''
+               `;
+
+        const whereClauses = [];
+        const request = pool.request();
+
+        // Thêm điều kiện WHERE
+        if (date) {
+            whereClauses.push(`ccdxm.NgayChamCong = @date`);
+            request.input('date', sql.Date, date);
+        }
+        if (startDate) {
+            whereClauses.push(`ccdxm.NgayChamCong >= @startDate`);
+            request.input('startDate', sql.Date, startDate);
+        }
+        if (endDate) {
+            whereClauses.push(`ccdxm.NgayChamCong <= @endDate`);
+            request.input('endDate', sql.Date, endDate);
+        }
+        if (personId) {
+            whereClauses.push(`(
+                ccdxm.TenNhanVien = @personId 
+                OR ccdxm.TenNhanVien LIKE @personIdLike
+                OR ccdxm.MaNhanVienNoiBo = @personId
+                OR ccdxm.MaNhanVienNoiBo LIKE @personIdLike
+            )`);
+            request.input('personId', sql.NVarChar(100), personId);
+            request.input('personIdLike', sql.NVarChar(100), `%${personId}%`);
+        }
+        if (status) {
+            whereClauses.push(`ccdxm.TrangThai LIKE @status`);
+            request.input('status', sql.NVarChar(50), `%${status}%`);
+        }
+        if (department) {
+            whereClauses.push(`ccdxm.CaLamViec LIKE @department`);
+            request.input('department', sql.NVarChar(100), `%${department}%`);
+        }
+
+        if (whereClauses.length > 0) {
+            query += ' AND ' + whereClauses.join(' AND ');
+        }
+        query += ' ORDER BY ccdxm.NgayChamCong DESC, ccdxm.ThoiGianXuLy DESC;';
+
+        const result = await request.query(query);
+        await pool.close();
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Lỗi lấy dữ liệu hoạt động:', error.message);
+        res.status(500).json({ error: 'Lỗi máy chủ khi lấy dữ liệu hoạt động' });
+    }
+});
+
+// GET /recent-events - Lấy các sự kiện mới từ bảng dulieutho
+router.get('/recent-events', async (req, res) => {
+    try {
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost',
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true,
+                connectionTimeout: 10000, // Giảm timeout
+                requestTimeout: 10000,    // Giảm timeout
+                enableArithAbort: true
+            }
+        };
+        
+        const pool = await sql.connect(config);
+        const limit = req.query.limit || 10; // Giảm từ 20 xuống 10 để tải nhanh hơn
+
+        let query = `
+            SELECT TOP ${limit}
+                raw.ts_vn,
+                raw.event_type,
+                raw.employee_name,
+                raw.device_name,
+                nv.HoTen
+            FROM dulieutho AS raw
+            LEFT JOIN NhanVien AS nv ON raw.person_id = nv.MaNhanVienHANET
+            WHERE raw.employee_name IS NOT NULL 
+              AND raw.employee_name != ''
+              AND raw.employee_name != '-'
+              AND raw.person_id IS NOT NULL
+            ORDER BY raw.ts_vn DESC
+        `;
+
+        const result = await pool.request().query(query);
+        await pool.close();
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Lỗi lấy sự kiện mới:', error.message);
+        res.status(500).json({ error: 'Lỗi máy chủ khi lấy sự kiện mới' });
+    }
+});
+
+// GET /recent-events-simple - API đơn giản để test tốc độ
+router.get('/recent-events-simple', async (req, res) => {
+    try {
+        const config = {
+            user: 'sa',
+            password: 'Admin@123',
+            server: 'localhost',
+            database: 'hanet',
+            options: {
+                encrypt: false,
+                trustServerCertificate: true,
+                connectionTimeout: 5000,
+                requestTimeout: 5000
+            }
+        };
+        
+        const pool = await sql.connect(config);
+        const limit = req.query.limit || 50;
+
+        // Query đơn giản nhất có thể
+        let query = `
+            SELECT TOP ${limit}
+                ts_vn,
+                event_type,
+                employee_name,
+                device_name
+            FROM dulieutho
+            WHERE employee_name IS NOT NULL 
+              AND employee_name != ''
+              AND employee_name != '-'
+            ORDER BY ts_vn DESC
+        `;
+
+        const result = await pool.request().query(query);
+        await pool.close();
+        res.json(result.recordset);
+    } catch (error) {
+        console.error('Lỗi lấy sự kiện đơn giản:', error.message);
+        res.status(500).json({ error: 'Lỗi máy chủ khi lấy sự kiện đơn giản' });
     }
 });
 

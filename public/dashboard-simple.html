@@ -42,7 +42,15 @@
         .status.error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
         .status.loading { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
         
-        .loading-spinner { display: inline-block; width: 20px; height: 20px; border: 3px solid #f3f3f3; border-top: 3px solid #4CAF50; border-radius: 50%; animation: spin 1s linear infinite; }
+        .loading-spinner { 
+            display: inline-block; 
+            width: 24px; 
+            height: 24px; 
+            border: 4px solid #f3f3f3; 
+            border-top: 4px solid #4CAF50; 
+            border-radius: 50%; 
+            animation: spin 1s linear infinite; 
+        }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         
         .tabs { display: flex; gap: 10px; margin-bottom: 20px; }
@@ -284,13 +292,16 @@
         @keyframes slideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
         /* Compact Status Messages */
         .status {
-            padding: 8px 12px;
-            border-radius: 4px;
-            font-size: 0.9em;
-            margin: 5px 0;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin: 10px 0;
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 12px;
+            text-align: center;
+            justify-content: center;
         }
 
         .status.success {
@@ -330,6 +341,185 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
+
+        /* Events Section Styles */
+        .events-section {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(15px);
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+            margin-top: 40px;
+            border: 3px solid rgba(52, 152, 219, 0.1);
+        }
+
+        .events-section h3 {
+            color: #2c3e50;
+            font-size: 2rem;
+            font-weight: 800;
+            margin: 0 0 30px 0;
+            letter-spacing: 0.5px;
+            text-align: center;
+        }
+
+        .events-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            max-height: 800px;
+            overflow-y: auto;
+            padding-right: 15px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 15px;
+            border: 2px solid #e9ecef;
+        }
+
+        .event-item {
+            background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+            border-radius: 18px;
+            padding: 25px 30px;
+            border-left: 6px solid #3498db;
+            font-size: 1.1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 5px;
+        }
+
+        .event-item:hover {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            transform: translateX(8px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .event-item.check-in {
+            border-left-color: #27ae60;
+            background: linear-gradient(135deg, #d5f4e6 0%, #a8e6cf 100%);
+        }
+
+        .event-item.check-out {
+            border-left-color: #e74c3c;
+            background: linear-gradient(135deg, #fadbd8 0%, #f1948a 100%);
+        }
+
+        .event-item.check-in:hover {
+            background: linear-gradient(135deg, #a8e6cf 0%, #7dcea0 100%);
+        }
+
+        .event-item.check-out:hover {
+            background: linear-gradient(135deg, #f1948a 0%, #e74c3c 100%);
+        }
+
+        .event-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 25px;
+        }
+
+        .event-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+
+        .event-name {
+            font-weight: 700;
+            color: #2c3e50;
+            font-size: 1.3rem;
+            letter-spacing: 0.3px;
+            line-height: 1.4;
+        }
+
+        .event-details {
+            font-size: 1.1rem;
+            color: #5a6c7d;
+            font-weight: 500;
+            letter-spacing: 0.2px;
+        }
+
+        .event-time {
+            font-family: 'Courier New', monospace;
+            font-size: 1.1rem;
+            color: #34495e;
+            background: rgba(52, 152, 219, 0.15);
+            padding: 10px 18px;
+            border-radius: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            min-width: 180px;
+            text-align: center;
+        }
+
+        .no-events {
+            text-align: center;
+            padding: 60px 30px;
+            color: #7f8c8d;
+            font-style: italic;
+            font-size: 1.3rem;
+            font-weight: 500;
+            background: rgba(127, 140, 141, 0.1);
+            border-radius: 15px;
+            border: 2px dashed #bdc3c7;
+        }
+
+        .no-events i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.6;
+        }
+
+        /* Scrollbar styling */
+        .events-list::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        .events-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 15px;
+        }
+
+        .events-list::-webkit-scrollbar-thumb {
+            background: #3498db;
+            border-radius: 15px;
+        }
+
+        .events-list::-webkit-scrollbar-thumb:hover {
+            background: #2980b9;
+        }
+
+        @media (max-width: 768px) {
+            .events-section {
+                padding: 30px;
+                margin-top: 30px;
+            }
+            
+            .events-section h3 {
+                font-size: 1.7rem;
+            }
+            
+            .event-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .event-time {
+                min-width: auto;
+                width: 100%;
+                font-size: 1rem;
+            }
+            
+            .event-name {
+                font-size: 1.2rem;
+            }
+            
+            .event-details {
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -358,53 +548,25 @@
             <div id="tab-dashboard" class="tab-content active">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
                     <h2>📊 Dashboard</h2>
-                    <button class="btn" onclick="refreshData()">🔄 Làm mới</button>
                 </div>
 
 
-                <!-- KPIs -->
-                <div class="kpis">
-                    <div class="kpi-card">
-                        <div class="kpi-title">Tổng bản ghi</div>
-                        <div class="kpi-value" id="kpi-total">0</div>
+                <!-- Recent Events from dulieutho -->
+                <div class="events-section">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px;">
+                        <h3>📱 Sự kiện mới</h3>
+                        <button class="btn" onclick="loadRecentEvents()" style="font-size: 1.1rem; padding: 12px 20px; font-weight: 600;">🔄 Làm mới</button>
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-title">Đúng giờ</div>
-                        <div class="kpi-value" id="kpi-on-time">0</div>
+                    
+                    <div id="events-status" class="status loading">
+                        <span class="loading-spinner"></span> Đang tải sự kiện...
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-title">Đi trễ</div>
-                        <div class="kpi-value" id="kpi-late">0</div>
+                    
+                    <div id="events-container" class="events-container" style="display: none;">
+                        <div id="events-list" class="events-list">
+                            <!-- Events will be loaded here -->
+                        </div>
                     </div>
-                    <div class="kpi-card">
-                        <div class="kpi-title">Về sớm</div>
-                        <div class="kpi-value" id="kpi-early">0</div>
-                    </div>
-                </div>
-
-                <!-- Status -->
-                <div id="status" class="status loading">
-                    <span class="loading-spinner"></span> Đang tải dữ liệu...
-                </div>
-
-                <!-- Data Table -->
-                <div class="table-container" id="table-container" style="display: none;">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Mã NV</th>
-                                <th>Tên NV</th>
-                                <th>Ngày chấm công</th>
-                                <th>Giờ vào</th>
-                                <th>Giờ ra</th>
-                                <th>Thời gian làm việc</th>
-                                <th>Ca làm việc</th>
-                                <th>Thiết bị</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body">
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
@@ -429,6 +591,7 @@
                                 <th>Giờ vào</th>
                                 <th>Giờ ra</th>
                                 <th>Thời gian làm việc</th>
+                                <th>Ca làm việc</th>
                                 <th>Trạng thái</th>
                             </tr>
                         </thead>
@@ -962,7 +1125,7 @@
             // Load tab-specific data
             switch(tabName) {
                 case 'dashboard':
-                    loadData();
+                    initializeEvents(); // Only initialize events for dashboard
                     break;
                 case 'activity':
                     loadActivityData();
@@ -980,142 +1143,6 @@
         }
 
         // Load attendance data
-        async function loadData() {
-            console.log('🔄 Loading dashboard data...');
-            const statusDiv = document.getElementById('status');
-            const tableContainer = document.getElementById('table-container');
-            
-            try {
-                statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang tải dữ liệu...';
-                statusDiv.className = 'status loading';
-                
-                console.log('📡 Fetching from /attendance-data...');
-                const response = await fetch('/attendance-data');
-                console.log('📡 Response status:', response.status);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const data = await response.json();
-                console.log('📊 Dữ liệu nhận được:', data);
-                console.log('📊 Số lượng records:', data.length);
-                
-                currentData = data;
-                
-                if (data && data.length > 0) {
-                    console.log('✅ Có dữ liệu, đang cập nhật KPIs và table...');
-                    updateKPIs(data);
-                    updateTable(data);
-                    
-                    statusDiv.innerHTML = `✅ Đã tải ${data.length} bản ghi thành công`;
-                    statusDiv.className = 'status success';
-                    tableContainer.style.display = 'block';
-                } else {
-                    console.log('⚠️ Không có dữ liệu');
-                    statusDiv.innerHTML = '⚠️ Không có dữ liệu chấm công';
-                    statusDiv.className = 'status error';
-                    tableContainer.style.display = 'none';
-                }
-                
-            } catch (error) {
-                console.error('❌ Lỗi tải dữ liệu:', error);
-                statusDiv.innerHTML = `❌ Lỗi: ${error.message}`;
-                statusDiv.className = 'status error';
-                tableContainer.style.display = 'none';
-            }
-        }
-
-        // Update KPIs
-        function updateKPIs(data) {
-            console.log('📊 Updating KPIs with data:', data);
-            const stats = {
-                total: data.length,
-                onTime: 0,
-                late: 0,
-                early: 0
-            };
-            
-            data.forEach(record => {
-                console.log('📋 Processing record:', record.TrangThai);
-                // Handle both formats: with and without diacritics
-                const status = record.TrangThai || '';
-                if (status.includes('Dung gio') || status.includes('Đúng giờ')) {
-                    stats.onTime++;
-                } else if (status.includes('Di tre') || status.includes('Đi trễ')) {
-                    stats.late++;
-                } else if (status.includes('Ve som') || status.includes('Về sớm')) {
-                    stats.early++;
-                }
-            });
-            
-            console.log('📊 Final stats:', stats);
-            
-            // Animate numbers
-            animateNumber('kpi-total', stats.total);
-            animateNumber('kpi-on-time', stats.onTime);
-            animateNumber('kpi-late', stats.late);
-            animateNumber('kpi-early', stats.early);
-        }
-
-        // Animate number
-        function animateNumber(elementId, targetValue) {
-            const element = document.getElementById(elementId);
-            const startValue = parseInt(element.textContent) || 0;
-            const duration = 1000;
-            const startTime = performance.now();
-            
-            function animate(currentTime) {
-                const elapsed = currentTime - startTime;
-                const progress = Math.min(elapsed / duration, 1);
-                const current = Math.round(startValue + (targetValue - startValue) * progress);
-                
-                element.textContent = current;
-                
-                if (progress < 1) {
-                    requestAnimationFrame(animate);
-                }
-            }
-            
-            requestAnimationFrame(animate);
-        }
-
-
-        // Update table
-        function updateTable(data) {
-            const tableBody = document.getElementById('table-body');
-            tableBody.innerHTML = '';
-            
-            data.forEach(record => {
-                // Format shift information
-                let shiftInfo = record.CaLamViec || record.Ca || '-';
-                
-                // Format device information
-                let deviceInfo = '-';
-                if (record.DiaDiemVao && record.DiaDiemRa) {
-                    deviceInfo = `${record.DiaDiemVao} → ${record.DiaDiemRa}`;
-                } else if (record.DiaDiemVao) {
-                    deviceInfo = record.DiaDiemVao;
-                } else if (record.DiaDiemRa) {
-                    deviceInfo = record.DiaDiemRa;
-                }
-                
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${record.MaNhanVienNoiBo || '-'}</td>
-                    <td>${record.TenNhanVien || record.HoTen || '-'}</td>
-                    <td>${formatDate(record.NgayChamCong)}</td>
-                    <td>${formatDateTime(record.GioVao)}</td>
-                    <td>${formatDateTime(record.GioRa)}</td>
-                    <td>${record.ThoiGianLamViec || 0}h</td>
-                    <td>${shiftInfo}</td>
-                    <td><span class="device-info">${deviceInfo}</span></td>
-                `;
-                tableBody.appendChild(row);
-            });
-        }
-
-        
         // Load activity data
         async function loadActivityData() {
             const statusDiv = document.getElementById('activity-status');
@@ -1125,7 +1152,7 @@
                 statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang tải dữ liệu hoạt động...';
                 statusDiv.className = 'status loading';
                 
-                const response = await fetch('/attendance-data');
+                const response = await fetch('/activity-data');
                 const data = await response.json();
                 
                 if (data && data.length > 0) {
@@ -1152,19 +1179,67 @@
             const tableBody = document.getElementById('activity-body');
             tableBody.innerHTML = '';
             
+            // Group data by date
+            const groupedData = {};
             data.forEach(record => {
-                const row = document.createElement('tr');
-                row.innerHTML = `
-                    <td>${record.MaNhanVienNoiBo || '-'}</td>
-                    <td>${record.TenNhanVien || record.HoTen || '-'}</td>
-                    <td>${formatDate(record.NgayChamCong)}</td>
-                    <td>${formatDateTime(record.GioVao)}</td>
-                    <td>${formatDateTime(record.GioRa)}</td>
-                    <td>${record.ThoiGianLamViec || 0}h</td>
-                    <td><span class="status-badge ${getStatusClass(record.TrangThai)}">${record.TrangThai || 'Chưa xử lý'}</span></td>
-                `;
-                tableBody.appendChild(row);
+                const date = record.NgayChamCong;
+                if (!groupedData[date]) {
+                    groupedData[date] = [];
+                }
+                groupedData[date].push(record);
             });
+            
+            // Sort dates (newest first)
+            const sortedDates = Object.keys(groupedData).sort((a, b) => new Date(b) - new Date(a));
+            
+            sortedDates.forEach(date => {
+                // Add date header
+                const dateHeaderRow = document.createElement('tr');
+                dateHeaderRow.className = 'date-header';
+                dateHeaderRow.innerHTML = `
+                    <td colspan="8" style="background: linear-gradient(45deg, #34495e, #2c3e50); color: white; font-weight: bold; text-align: center; padding: 15px;">
+                        📅 ${formatDate(date)} (${groupedData[date].length} nhân viên)
+                    </td>
+                `;
+                tableBody.appendChild(dateHeaderRow);
+                
+                // Add records for this date
+                groupedData[date].forEach(record => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${record.MaNhanVienNoiBo || '-'}</td>
+                        <td>${record.HoTen || '-'}</td>
+                        <td>${formatDate(record.NgayChamCong)}</td>
+                        <td>${formatDateTime(record.GioVao)}</td>
+                        <td>${formatDateTime(record.GioRa)}</td>
+                        <td>${record.ThoiGianLamViec || 0}h</td>
+                        <td>
+                            <span style="background: rgba(52, 152, 219, 0.1); padding: 4px 8px; border-radius: 6px; font-size: 0.85rem;">
+                                ${record.CaLamViec || '-'}
+                            </span>
+                        </td>
+                        <td><span class="status-badge ${getActivityStatusClass(record.TrangThai)}">${record.TrangThai || 'Chưa xử lý'}</span></td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            });
+        }
+
+        // Get activity status class
+        function getActivityStatusClass(status) {
+            switch (status) {
+                case 'Hoàn thành':
+                case 'Đúng giờ':
+                    return 'check-out';
+                case 'Đã vào':
+                case 'Check-in':
+                    return 'check-in';
+                case 'Về sớm':
+                case 'Không đúng giờ quy định':
+                    return 'pending';
+                default:
+                    return 'pending';
+            }
         }
 
         // Update report preview
@@ -2351,10 +2426,6 @@
 
 
         // Refresh data
-        function refreshData() {
-            loadData();
-        }
-
         // Utility functions
         function formatDate(dateString) {
             if (!dateString) return '-';
@@ -2901,6 +2972,128 @@
         }
 
         console.log('✅ Enhanced Dashboard loaded successfully');
+        
+        // ========================================
+        // RECENT EVENTS FUNCTIONS
+        // ========================================
+        
+        let recentEvents = [];
+        let eventsAutoRefreshInterval;
+
+        // Load recent events
+        async function loadRecentEvents() {
+            const statusDiv = document.getElementById('events-status');
+            const container = document.getElementById('events-container');
+            
+            try {
+                statusDiv.innerHTML = '<span class="loading-spinner"></span> Đang tải sự kiện...';
+                statusDiv.className = 'status loading';
+                
+                // Tạo AbortController để timeout sau 5 giây
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
+                const response = await fetch('/recent-events-simple?limit=50', {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+                
+                const data = await response.json();
+                
+                if (data && data.length > 0) {
+                    recentEvents = data;
+                    updateEventsDisplay(data);
+                    statusDiv.innerHTML = `✅ Đã tải ${data.length} sự kiện mới`;
+                    statusDiv.className = 'status success';
+                    container.style.display = 'block';
+                } else {
+                    statusDiv.innerHTML = '⚠️ Không có sự kiện mới';
+                    statusDiv.className = 'status error';
+                    container.style.display = 'none';
+                }
+                
+            } catch (error) {
+                console.error('❌ Lỗi tải sự kiện:', error);
+                
+                if (error.name === 'AbortError') {
+                    statusDiv.innerHTML = '⏰ Timeout - Vui lòng thử lại';
+                    statusDiv.className = 'status error';
+                } else {
+                    statusDiv.innerHTML = `❌ Lỗi: ${error.message}`;
+                    statusDiv.className = 'status error';
+                }
+                container.style.display = 'none';
+            }
+        }
+
+        // Update events display
+        function updateEventsDisplay(events) {
+            const eventsList = document.getElementById('events-list');
+            eventsList.innerHTML = '';
+            
+            if (!events || events.length === 0) {
+                eventsList.innerHTML = `
+                    <div class="no-events">
+                        <div>📭</div>
+                        Không có sự kiện mới
+                    </div>
+                `;
+                return;
+            }
+
+            events.forEach((event, index) => {
+                const eventElement = document.createElement('div');
+                eventElement.className = `event-item ${event.event_type === 'vào' ? 'check-in' : 'check-out'}`;
+
+                const eventType = event.event_type === 'vào' ? 'VÀO' : 'RA';
+                const eventTime = formatDateTime(event.ts_vn);
+                const employeeName = event.HoTen || event.employee_name || 'Không xác định';
+                const deviceName = event.device_name || '-';
+
+                eventElement.innerHTML = `
+                    <div class="event-content">
+                        <div class="event-info">
+                            <div class="event-name">${employeeName}</div>
+                            <div class="event-details">${eventType} • ${deviceName}</div>
+                        </div>
+                        <div class="event-time">${eventTime}</div>
+                    </div>
+                `;
+                
+                eventsList.appendChild(eventElement);
+            });
+        }
+
+        // Setup events auto refresh
+        function setupEventsAutoRefresh() {
+            eventsAutoRefreshInterval = setInterval(() => {
+                console.log('🔄 Auto refresh events triggered');
+                loadRecentEvents();
+            }, 30000); // Tăng từ 15 giây lên 30 giây để giảm tải
+        }
+
+        // Stop events auto refresh
+        function stopEventsAutoRefresh() {
+            if (eventsAutoRefreshInterval) {
+                clearInterval(eventsAutoRefreshInterval);
+                eventsAutoRefreshInterval = null;
+            }
+        }
+
+        // Initialize events when dashboard tab is active
+        function initializeEvents() {
+            loadRecentEvents();
+            setupEventsAutoRefresh();
+        }
+
+        // Cleanup events on page unload
+        window.addEventListener('beforeunload', function() {
+            stopEventsAutoRefresh();
+        });
+        
+        // ========================================
+        // END RECENT EVENTS FUNCTIONS
+        // ========================================
         
         // ========================================
         // END HANET CONFIGURATION FUNCTIONS
