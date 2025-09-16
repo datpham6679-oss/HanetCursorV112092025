@@ -390,7 +390,6 @@ router.post('/hanet-webhook', async (req, res) => {
     const deviceId = p.deviceID || '-';
     const eventId = p.id || `${Date.now()}-${Math.random()}`;
 
-    // Log essential webhook info for debugging
     const safeString = (str) => {
         if (!str) return '';
         try {
@@ -1103,51 +1102,6 @@ router.post('/update-employee-codes', async (req, res) => {
     }
 });
 
-// Test webhook endpoint để kiểm tra dữ liệu từ Hanet
-router.get('/webhook-test', async (req, res) => {
-    try {
-        const config = {
-            user: 'sa',
-            password: 'Admin@123',
-            server: 'localhost', // Sử dụng SQL Authentication
-            database: 'hanet',
-            options: {
-                encrypt: false,
-                trustServerCertificate: true
-            }
-        };
-        
-        const pool = await sql.connect(config);
-        const result = await pool.request().query(`
-            SELECT TOP 10 
-                event_type,
-                employee_name,
-                device_id,
-                device_name,
-                ts_vn,
-                DaXuLy
-            FROM dulieutho 
-            ORDER BY ts_vn DESC
-        `);
-        
-        await pool.close();
-        res.json({
-            success: true,
-            message: 'Dữ liệu webhook gần nhất',
-            count: result.recordset.length,
-            data: result.recordset
-        });
-    } catch (error) {
-        console.error('❌ Error testing webhook data:', error.message);
-        res.status(500).json({
-            success: false,
-            message: 'Lỗi lấy dữ liệu webhook',
-            error: error.message
-        });
-    }
-});
-
-// Test Hanet API connection - REMOVED DUPLICATE ENDPOINT
 
 // Lấy danh sách thiết bị từ dữ liệu webhook
 router.get('/devices', async (req, res) => {
