@@ -18,6 +18,24 @@
         .menu-item:hover { background: #333; color: white; }
         .menu-item.active { background: #4CAF50; color: white; }
         
+        .excel-link { 
+            padding: 12px; 
+            background: transparent; 
+            border: none; 
+            color: #27ae60; 
+            cursor: pointer; 
+            border-radius: 5px; 
+            text-align: left; 
+            text-decoration: none; 
+            display: block; 
+            transition: all 0.3s ease;
+        }
+        .excel-link:hover { 
+            background: #27ae60; 
+            color: white; 
+            transform: translateX(5px);
+        }
+        
         .main { flex: 1; padding: 20px; }
         .header { background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         .header h1 { color: #333; margin-bottom: 10px; }
@@ -533,6 +551,7 @@
                 <button class="menu-item" onclick="switchTab('employee-detail')">👤 Chi tiết NV</button>
                 <button class="menu-item" onclick="switchTab('employee-management')">👥 Quản lý NV</button>
                 <button class="menu-item" onclick="switchTab('reports')">📄 Báo cáo</button>
+                <a href="http://192.168.11.114:1888/dashboard-new" class="menu-item excel-link" target="_blank">📊 Excel</a>
             </nav>
         </aside>
 

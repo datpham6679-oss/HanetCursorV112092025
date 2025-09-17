@@ -1,6 +1,6 @@
 -- =============================================
 -- Stored Procedure: sp_XuLyChamCongMoi_Fixed
--- Mô tả: Xử lý chấm công với logic đúng cho ca SC/HC/VHCN
+-- Mô tả: Xử lý chấm công với logic sửa lỗi - chỉ xử lý ca ngày
 -- Tác giả: System
 -- Ngày tạo: 2025-09-16
 -- =============================================
@@ -11,6 +11,7 @@ BEGIN
     SET NOCOUNT ON;
     
     -- Buoc 1: Lay cac su kien cho tat ca nhan vien (bao gom ca DaXuLy=1)
+    -- Chỉ lấy những ngày có event mới nhất trong 3 ngày gần đây để tối ưu tốc độ
     SELECT DISTINCT
         raw.person_id,
         CAST(raw.ts_vn AS DATE) AS NgayChamCong,
@@ -22,6 +23,7 @@ BEGIN
     JOIN NhanVien AS nv WITH (NOLOCK) ON (raw.person_id = nv.MaNhanVienHANET OR raw.employee_code = nv.MaNhanVienNoiBo)
     WHERE raw.person_id IS NOT NULL 
         AND nv.MaNhanVienHANET IS NOT NULL
+        AND nv.CaLamViec IS NOT NULL  -- CHỈ XỬ LÝ NHÂN VIÊN CÓ CA LÀM VIỆC
         AND CAST(raw.ts_vn AS DATE) >= DATEADD(DAY, -3, GETDATE())
     GROUP BY raw.person_id, CAST(raw.ts_vn AS DATE), nv.CaLamViec, nv.MaNhanVienNoiBo, nv.HoTen;
     
@@ -45,10 +47,11 @@ BEGIN
         DECLARE @GioRa DATETIME = NULL;
         DECLARE @NgayVao DATE = NULL;
         DECLARE @NgayRa DATE = NULL;
-        DECLARE @DiaDiemVao NVARCHAR(200) = NULL;
-        DECLARE @DiaDiemRa NVARCHAR(200) = NULL;
+        DECLARE @DiaDiemVao NVARCHAR(100) = NULL;
+        DECLARE @DiaDiemRa NVARCHAR(100) = NULL;
         
-        -- LOGIC ĐÚNG: Tim gio vao CŨ NHẤT trong ngay (giờ vào sớm nhất)
+        -- LOGIC MỚI: Chỉ xử lý ca ngày, không xử lý ca đêm
+        -- Tìm giờ vào sớm nhất trong ngày (chỉ trong cùng ngày)
         SELECT TOP 1 
             @GioVao = raw.ts_vn,
             @NgayVao = CAST(raw.ts_vn AS DATE),
@@ -59,150 +62,159 @@ BEGIN
             AND raw.device_name LIKE N'%_IN'
         ORDER BY raw.ts_vn ASC;
         
-        -- LOGIC MỚI: Tim gio ra MỚI NHẤT trong CÙNG NGÀY (không bao gồm ngày hôm sau)
-        -- Chỉ cho phép ca VHCD làm việc qua ngày hôm sau
-        IF @CaLamViec = 'VHCD'
+        -- Nếu không có giờ vào từ device IN, lấy event vào đầu tiên trong ngày
+        IF @GioVao IS NULL
         BEGIN
-            -- Ca VHCD: có thể làm việc qua ngày hôm sau
             SELECT TOP 1 
-                @GioRa = raw.ts_vn,
-                @NgayRa = CAST(raw.ts_vn AS DATE),
-                @DiaDiemRa = raw.device_name
-            FROM dulieutho raw
-            WHERE raw.person_id = @person_id
-                AND (CAST(raw.ts_vn AS DATE) = @NgayChamCong OR CAST(raw.ts_vn AS DATE) = DATEADD(DAY, 1, @NgayChamCong))
-                AND raw.device_name LIKE N'%_OUT'
-                AND (@GioVao IS NULL OR raw.ts_vn > @GioVao)
-            ORDER BY raw.ts_vn DESC;
-        END
-        ELSE
-        BEGIN
-            -- Ca SC/HC/VHCN: chỉ làm việc trong cùng ngày
-            SELECT TOP 1 
-                @GioRa = raw.ts_vn,
-                @NgayRa = CAST(raw.ts_vn AS DATE),
-                @DiaDiemRa = raw.device_name
+                @GioVao = raw.ts_vn,
+                @NgayVao = CAST(raw.ts_vn AS DATE),
+                @DiaDiemVao = raw.device_name
             FROM dulieutho raw
             WHERE raw.person_id = @person_id
                 AND CAST(raw.ts_vn AS DATE) = @NgayChamCong
-                AND raw.device_name LIKE N'%_OUT'
+                AND raw.event_type = 'vào'
+            ORDER BY raw.ts_vn ASC;
+        END
+        
+        -- LOGIC MỚI: Tìm giờ ra muộn nhất TRONG CÙNG NGÀY (không lấy ngày hôm sau)
+        SELECT TOP 1 
+            @GioRa = raw.ts_vn,
+            @NgayRa = CAST(raw.ts_vn AS DATE),
+            @DiaDiemRa = raw.device_name
+        FROM dulieutho raw
+        WHERE raw.person_id = @person_id
+            AND CAST(raw.ts_vn AS DATE) = @NgayChamCong  -- CHỈ TRONG CÙNG NGÀY
+            AND raw.device_name LIKE N'%_OUT'
+            AND (@GioVao IS NULL OR raw.ts_vn > @GioVao)
+        ORDER BY raw.ts_vn DESC;
+        
+        -- Nếu không có giờ ra từ device OUT, lấy event ra cuối cùng trong ngày
+        IF @GioRa IS NULL
+        BEGIN
+            SELECT TOP 1 
+                @GioRa = raw.ts_vn,
+                @NgayRa = CAST(raw.ts_vn AS DATE),
+                @DiaDiemRa = raw.device_name
+            FROM dulieutho raw
+            WHERE raw.person_id = @person_id
+                AND CAST(raw.ts_vn AS DATE) = @NgayChamCong  -- CHỈ TRONG CÙNG NGÀY
+                AND raw.event_type = 'ra'
                 AND (@GioVao IS NULL OR raw.ts_vn > @GioVao)
             ORDER BY raw.ts_vn DESC;
         END
         
-        -- Chi xu ly neu co ca gio vao va gio ra
+        -- KIỂM TRA LOGIC HỢP LÝ: Chỉ xử lý nếu có cả giờ vào và giờ ra trong cùng ngày
         IF @GioVao IS NOT NULL AND @GioRa IS NOT NULL AND @GioRa > @GioVao
         BEGIN
-            -- Tinh thoi gian lam viec
+            -- KIỂM TRA THỜI GIAN LÀM VIỆC HỢP LÝ (tối đa 12 giờ)
             DECLARE @ThoiGianLamViec DECIMAL(10,4) = CAST(DATEDIFF(MINUTE, @GioVao, @GioRa) AS DECIMAL(10,4)) / 60.0;
             
-            -- TU DONG XAC DINH CA LAM VIEC DUA TREN THOI GIAN
-            DECLARE @CaThucTe NVARCHAR(10) = @CaLamViec;
-            DECLARE @TrangThai NVARCHAR(50) = N'Chua co quy dinh';
-            DECLARE @HopLe BIT = 0;
-            
-            -- Logic tu dong xac dinh ca lam viec và validation khung giờ
-            DECLARE @GioCheckin TIME = CAST(@GioVao AS TIME);
-            DECLARE @GioCheckout TIME = CAST(@GioRa AS TIME);
-            
-            -- VALIDATION: Kiểm tra khung giờ cho phép
-            -- Ca Hành chính: 6h-18h
-            IF @GioCheckin >= '06:00:00' AND @GioCheckout <= '18:00:00'
+            -- CHỈ XỬ LÝ NẾU THỜI GIAN LÀM VIỆC HỢP LÝ (1-12 giờ)
+            IF @ThoiGianLamViec >= 1.0 AND @ThoiGianLamViec <= 12.0
             BEGIN
-                -- Xac dinh ca lam viec dua tren gio checkin
-                IF @GioCheckin BETWEEN '06:00:00' AND '07:30:00' AND @GioCheckout BETWEEN '17:00:00' AND '18:00:00'
-                BEGIN
-                    SET @CaThucTe = N'HC'  -- Ca hanh chinh
-                    SET @HopLe = 1
-                END
-                ELSE IF @GioCheckin BETWEEN '06:00:00' AND '08:00:00' AND @GioCheckout BETWEEN '16:00:00' AND '18:00:00'
-                BEGIN
-                    SET @CaThucTe = N'SC'  -- Ca sua chua
-                    SET @HopLe = 1
-                END
-                ELSE IF @GioCheckin BETWEEN '06:00:00' AND '07:00:00' AND @GioCheckout BETWEEN '19:00:00' AND '20:00:00'
-                BEGIN
-                    IF @CaLamViec = 'VH'
-                        SET @CaThucTe = N'VHCN' -- Ca van hanh ngay
-                    ELSE
-                        SET @CaThucTe = @CaLamViec
-                    SET @HopLe = 1
-                END
-                ELSE IF @CaLamViec = 'VH'
-                BEGIN
-                    SET @CaThucTe = N'VH'   -- Ca van hanh linh hoat
-                    SET @HopLe = 1
-                END
-            END
-            -- Ca Vận hành đêm: 18h-8h hôm sau
-            ELSE IF (@GioCheckin >= '18:00:00' OR @GioCheckout <= '08:00:00')
-            BEGIN
-                IF @GioCheckin BETWEEN '18:00:00' AND '19:00:00' AND @GioCheckout BETWEEN '07:00:00' AND '08:00:00'
-                BEGIN
-                    SET @CaThucTe = N'VHCD' -- Ca van hanh dem
-                    SET @HopLe = 1
-                END
-                ELSE IF @CaLamViec = 'VH'
-                BEGIN
-                    SET @CaThucTe = N'VHCD' -- Ca van hanh dem
-                    SET @HopLe = 1
-                END
-            END
-            
-            -- Xac dinh trang thai
-            IF @HopLe = 1
-            BEGIN
-                -- Tính toán thời gian làm việc chuẩn
-                DECLARE @ThoiGianLamViecChuan DECIMAL(10,4) = 8.0; -- 8 giờ chuẩn
+                -- Xac dinh ca lam viec thuc te
+                DECLARE @CaThucTe NVARCHAR(10) = @CaLamViec;
                 
-                IF @ThoiGianLamViec >= @ThoiGianLamViecChuan - 0.5
+                -- Xac dinh trang thai voi dieu kien nghiem ngat
+                DECLARE @TrangThai NVARCHAR(50);
+                DECLARE @HopLeCheckin BIT = 0;
+                DECLARE @HopLeCheckout BIT = 0;
+                
+                IF @CaThucTe = N'HC'
                 BEGIN
-                    SET @TrangThai = N'Dung gio quy dinh'
+                    -- HC: Checkin 06:00-07:30, Checkout 17:00-18:00
+                    SET @HopLeCheckin = CASE WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+                                                AND CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '07:30:00' THEN 1 ELSE 0 END;
+                    SET @HopLeCheckout = CASE WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+                                                 AND CAST(@GioRa AS TIME) BETWEEN '17:00:00' AND '18:00:00' THEN 1 ELSE 0 END;
+                    
+                    SET @TrangThai = CASE
+                        WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 1 THEN N'Đúng giờ'
+                        WHEN @HopLeCheckin = 0 AND @HopLeCheckout = 1 THEN N'Đi trễ'
+                        WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 0 THEN N'Về sớm'
+                        ELSE N'Không đúng giờ quy định'
+                    END
                 END
-                ELSE IF @ThoiGianLamViec < @ThoiGianLamViecChuan - 0.5
+                ELSE IF @CaThucTe = N'SC'
                 BEGIN
-                    SET @TrangThai = N'Khong dung gio quy dinh'
+                    -- SC: Checkin 06:00-08:00, Checkout 16:00-18:00
+                    SET @HopLeCheckin = CASE WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+                                                AND CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '08:00:00' THEN 1 ELSE 0 END;
+                    SET @HopLeCheckout = CASE WHEN DATENAME(weekday, @NgayChamCong) IN ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+                                                 AND CAST(@GioRa AS TIME) BETWEEN '16:00:00' AND '18:00:00' THEN 1 ELSE 0 END;
+                    
+                    SET @TrangThai = CASE
+                        WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 1 THEN N'Đúng giờ'
+                        WHEN @HopLeCheckin = 0 AND @HopLeCheckout = 1 THEN N'Đi trễ'
+                        WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 0 THEN N'Về sớm'
+                        ELSE N'Không đúng giờ quy định'
+                    END
                 END
+                ELSE IF @CaThucTe = N'VH'
+                BEGIN
+                    -- VH: Xử lý ca ngày (06:00-19:00) và ca đêm (18:00-07:00 ngày hôm sau)
+                    DECLARE @GioVaoTime TIME = CAST(@GioVao AS TIME);
+                    
+                    IF @GioVaoTime BETWEEN '06:00:00' AND '07:00:00'
+                    BEGIN
+                        -- VHCN: Checkin 06:00-07:00, Checkout 19:00-20:00
+                        SET @CaThucTe = N'VHCN';
+                        SET @HopLeCheckin = CASE WHEN CAST(@GioVao AS TIME) BETWEEN '06:00:00' AND '07:00:00' THEN 1 ELSE 0 END;
+                        SET @HopLeCheckout = CASE WHEN CAST(@GioRa AS TIME) BETWEEN '19:00:00' AND '20:00:00' THEN 1 ELSE 0 END;
+                        
+                        SET @TrangThai = CASE
+                            WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 1 THEN N'Đúng giờ'
+                            WHEN @HopLeCheckin = 0 AND @HopLeCheckout = 1 THEN N'Đi trễ'
+                            WHEN @HopLeCheckin = 1 AND @HopLeCheckout = 0 THEN N'Về sớm'
+                            ELSE N'Không đúng giờ quy định'
+                        END
+                    END
+                    ELSE
+                    BEGIN
+                        SET @TrangThai = N'Không đúng giờ quy định';
+                    END
+                END
+                ELSE
+                BEGIN
+                    SET @TrangThai = N'Không đúng giờ quy định';
+                END
+                
+                -- MERGE de cap nhat hoac them moi
+                MERGE ChamCongDaXuLyMoi AS target
+                USING (
+                    SELECT 
+                        @MaNhanVienNoiBo as MaNhanVienNoiBo,
+                        @HoTen as TenNhanVien,
+                        @NgayChamCong as NgayChamCong,
+                        CAST(@GioVao AS DATE) as NgayVao,
+                        @GioVao as GioVao,
+                        CAST(@GioRa AS DATE) as NgayRa,
+                        @GioRa as GioRa,
+                        @ThoiGianLamViec as ThoiGianLamViec,
+                        @CaThucTe as CaLamViec,
+                        @TrangThai as TrangThai,
+                        @DiaDiemVao as DiaDiemVao,
+                        @DiaDiemRa as DiaDiemRa
+                ) AS source (MaNhanVienNoiBo, TenNhanVien, NgayChamCong, NgayVao, GioVao, NgayRa, GioRa, ThoiGianLamViec, CaLamViec, TrangThai, DiaDiemVao, DiaDiemRa)
+                ON target.MaNhanVienNoiBo = source.MaNhanVienNoiBo 
+                   AND target.NgayChamCong = source.NgayChamCong
+                WHEN MATCHED THEN
+                    UPDATE SET
+                        TenNhanVien = source.TenNhanVien,
+                        NgayVao = source.NgayVao,
+                        GioVao = source.GioVao,
+                        NgayRa = source.NgayRa,
+                        GioRa = source.GioRa,
+                        ThoiGianLamViec = source.ThoiGianLamViec,
+                        CaLamViec = source.CaLamViec,
+                        TrangThai = source.TrangThai,
+                        DiaDiemVao = source.DiaDiemVao,
+                        DiaDiemRa = source.DiaDiemRa,
+                        ThoiGianXuLy = GETDATE()
+                WHEN NOT MATCHED THEN
+                    INSERT (MaNhanVienNoiBo, TenNhanVien, NgayChamCong, NgayVao, GioVao, NgayRa, GioRa, ThoiGianLamViec, CaLamViec, TrangThai, DiaDiemVao, DiaDiemRa, ThoiGianXuLy)
+                    VALUES (source.MaNhanVienNoiBo, source.TenNhanVien, source.NgayChamCong, source.NgayVao, source.GioVao, source.NgayRa, source.GioRa, source.ThoiGianLamViec, source.CaLamViec, source.TrangThai, source.DiaDiemVao, source.DiaDiemRa, GETDATE());
             END
-            ELSE
-            BEGIN
-                SET @TrangThai = N'Khong dung gio quy dinh'
-            END
-            
-            -- Insert hoac update vao bang ChamCongDaXuLyMoi
-            MERGE ChamCongDaXuLyMoi AS target
-            USING (SELECT 
-                @MaNhanVienNoiBo AS MaNhanVienNoiBo,
-                @NgayChamCong AS NgayChamCong,
-                @NgayVao AS NgayVao,
-                @GioVao AS GioVao,
-                @NgayRa AS NgayRa,
-                @GioRa AS GioRa,
-                @ThoiGianLamViec AS ThoiGianLamViec,
-                @CaThucTe AS CaLamViec,
-                @TrangThai AS TrangThai,
-                @HoTen AS TenNhanVien,
-                @DiaDiemVao AS DiaDiemVao,
-                @DiaDiemRa AS DiaDiemRa
-            ) AS source
-            ON target.MaNhanVienNoiBo = source.MaNhanVienNoiBo 
-               AND target.NgayChamCong = source.NgayChamCong
-            WHEN MATCHED THEN
-                UPDATE SET
-                    TenNhanVien = source.TenNhanVien,
-                    NgayVao = source.NgayVao,
-                    GioVao = source.GioVao,
-                    NgayRa = source.NgayRa,
-                    GioRa = source.GioRa,
-                    ThoiGianLamViec = source.ThoiGianLamViec,
-                    CaLamViec = source.CaLamViec,
-                    TrangThai = source.TrangThai,
-                    DiaDiemVao = source.DiaDiemVao,
-                    DiaDiemRa = source.DiaDiemRa,
-                    ThoiGianXuLy = GETDATE()
-            WHEN NOT MATCHED THEN
-                INSERT (MaNhanVienNoiBo, TenNhanVien, NgayChamCong, NgayVao, GioVao, NgayRa, GioRa, ThoiGianLamViec, CaLamViec, TrangThai, DiaDiemVao, DiaDiemRa, ThoiGianXuLy)
-                VALUES (source.MaNhanVienNoiBo, source.TenNhanVien, source.NgayChamCong, source.NgayVao, source.GioVao, source.NgayRa, source.GioRa, source.ThoiGianLamViec, source.CaLamViec, source.TrangThai, source.DiaDiemVao, source.DiaDiemRa, GETDATE());
         END
         
         FETCH NEXT FROM cursor_events INTO @person_id, @NgayChamCong, @CaLamViec, @MaNhanVienNoiBo, @HoTen;
@@ -220,5 +232,5 @@ BEGIN
     -- Cleanup
     DROP TABLE #TempAllEvents;
     
-    PRINT 'Xu ly cham cong voi logic da sua hoan thanh!';
+    PRINT 'Xu ly cham cong tu dong hoan thanh (Fixed version)!';
 END

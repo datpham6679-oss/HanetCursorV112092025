@@ -572,8 +572,8 @@ router.post('/hanet-webhook', async (req, res) => {
         spRequest.timeout = 20000; // 20 giây timeout cho SP
         
         try {
-            await spRequest.query(`EXEC sp_XuLyChamCongMoi_Fixed`);
-            // Stored procedure completed silently
+            await spRequest.query(`EXEC sp_XuLyChamCongMoi_Corrected`);
+            console.log('✅ Stored procedure sp_XuLyChamCongMoi_Corrected đã chạy thành công');
         } catch (spError) {
             console.error('⚠️ Lỗi stored procedure (không ảnh hưởng webhook):', spError.message);
             // Không throw error để webhook vẫn trả về thành công
@@ -646,6 +646,7 @@ router.get('/report/excel', async (req, res) => {
             SELECT
                 nv.MaNhanVienNoiBo,
                 nv.HoTen,
+                COALESCE(c.CaLamViec, nv.CaLamViec) AS CaLamViec,
                 c.NgayChamCong, 
                 CONVERT(DATE, c.GioVao) AS NgayVao, 
                 CONVERT(DATE, c.GioRa) AS NgayRa, 
@@ -666,6 +667,7 @@ router.get('/report/excel', async (req, res) => {
         worksheet.columns = [
             { header: 'Mã Nhân Viên', key: 'MaNhanVienNoiBo', width: 20 },
             { header: 'Họ và tên', key: 'HoTen', width: 30 },
+            { header: 'Ca Làm Việc', key: 'CaLamViec', width: 15 },
             { header: 'Ngày công', key: 'NgayChamCong', width: 15, style: { numFmt: 'yyyy-mm-dd' } },
             { header: 'Ngày vào', key: 'NgayVao', width: 15, style: { numFmt: 'yyyy-mm-dd' } },
             { header: 'Ngày ra', key: 'NgayRa', width: 15, style: { numFmt: 'yyyy-mm-dd' } },
@@ -686,15 +688,17 @@ router.get('/report/excel', async (req, res) => {
             const formatTime = (date) => {
                 if (!date) return '';
                 const d = new Date(date);
-                // Sử dụng UTC để tránh timezone conversion
-                const hours = d.getUTCHours();
-                const minutes = d.getUTCMinutes();
+                // Trừ đi 7 giờ để hiển thị đúng thời gian thực tế
+                d.setHours(d.getHours() - 7);
+                const hours = d.getHours();
+                const minutes = d.getMinutes();
                 return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
             };
             
             return {
                 MaNhanVienNoiBo: row.MaNhanVienNoiBo,
                 HoTen: row.HoTen,
+                CaLamViec: row.CaLamViec || 'Chưa xác định',
                 NgayChamCong: formatDate(row.NgayChamCong),
                 NgayVao: formatDate(row.NgayVao),
                 NgayRa: formatDate(row.NgayRa),
@@ -1349,6 +1353,7 @@ router.get('/export/report', async (req, res) => {
                 nv.MaNhanVienNoiBo,
                 nv.HoTen,
                 nv.PhongBan,
+                COALESCE(c.CaLamViec, nv.CaLamViec) AS CaLamViec,
                 c.NgayChamCong,
                 c.GioVao,
                 c.GioRa,
@@ -1388,40 +1393,556 @@ router.get('/export/report', async (req, res) => {
         query += ` ORDER BY c.NgayChamCong DESC, nv.MaNhanVienNoiBo`;
         
         const result = await request.query(query);
-        const data = result.recordset;
+        let data = result.recordset;
+        
+        // Nếu không có dữ liệu đã xử lý và có personId, fallback sang dữ liệu thô
+        if (personId && data.length === 0) {
+            console.log(`⚠️ Không có dữ liệu đã xử lý cho personId ${personId}, fallback sang dữ liệu thô`);
+            
+            // Lấy thông tin nhân viên
+            const employeeQuery = `
+                SELECT MaNhanVienNoiBo, HoTen, PhongBan, CaLamViec 
+                FROM NhanVien 
+                WHERE MaNhanVienNoiBo LIKE @personId
+            `;
+            const employeeResult = await pool.request()
+                .input('personId', sql.NVarChar(50), personId)
+                .query(employeeQuery);
+            
+            if (employeeResult.recordset.length > 0) {
+                const employeeInfo = employeeResult.recordset[0];
+                
+                // Lấy dữ liệu thô từ dulieutho - tìm theo employee_code và tên nhân viên
+                const rawDataQuery = `
+                    SELECT 
+                        employee_name,
+                        person_id,
+                        event_type,
+                        ts_vn,
+                        device_name,
+                        employee_code
+                    FROM dulieutho 
+                    WHERE (employee_code = @employeeCode OR employee_name LIKE @employeeName)
+                      AND CAST(ts_vn AS DATE) >= @startDate
+                      AND CAST(ts_vn AS DATE) <= @endDate
+                    ORDER BY ts_vn ASC
+                `;
+                
+                const rawDataResult = await pool.request()
+                    .input('employeeCode', sql.NVarChar(50), employeeInfo.MaNhanVienNoiBo)
+                    .input('employeeName', sql.NVarChar(200), `%${employeeInfo.HoTen}%`)
+                    .input('startDate', sql.Date, startDate || '2025-01-01')
+                    .input('endDate', sql.Date, endDate || '2025-12-31')
+                    .query(rawDataQuery);
+                
+                if (rawDataResult.recordset.length > 0) {
+                    // Tạo dữ liệu giả lập từ raw data
+                    const rawData = rawDataResult.recordset;
+                    const dataByDate = {};
+                    
+                    rawData.forEach(row => {
+                        const date = new Date(row.ts_vn).toISOString().split('T')[0];
+                        if (!dataByDate[date]) {
+                            dataByDate[date] = [];
+                        }
+                        dataByDate[date].push({
+                            MaNhanVienNoiBo: employeeInfo.MaNhanVienNoiBo,
+                            HoTen: employeeInfo.HoTen,
+                            PhongBan: employeeInfo.PhongBan,
+                            CaLamViec: employeeInfo.CaLamViec,
+                            NgayChamCong: date,
+                            GioVao: row.event_type === 'checkin' ? row.ts_vn : null,
+                            GioRa: row.event_type === 'checkout' ? row.ts_vn : null,
+                            ThoiGianLamViec: 0,
+                            TrangThai: 'Chưa xử lý',
+                            DiaDiemVao: row.event_type === 'checkin' ? row.device_name : null,
+                            DiaDiemRa: row.event_type === 'checkout' ? row.device_name : null,
+                            NgayVao: row.event_type === 'checkin' ? date : null,
+                            NgayRa: row.event_type === 'checkout' ? date : null,
+                            RawData: true
+                        });
+                    });
+                    
+                    // Chuyển đổi thành array
+                    data = Object.values(dataByDate).flat();
+                    console.log(`✅ Đã fallback sang dữ liệu thô: ${data.length} bản ghi`);
+                }
+            }
+        }
         
         // Tạo Excel file
         const workbook = new ExcelJS.Workbook();
-        const worksheet = workbook.addWorksheet('Báo cáo chấm công');
         
-        // Định nghĩa columns
-        worksheet.columns = [
-            { header: 'Mã Nhân Viên', key: 'MaNhanVienNoiBo', width: 15 },
-            { header: 'Họ và Tên', key: 'HoTen', width: 25 },
-            { header: 'Phòng Ban', key: 'PhongBan', width: 20 },
-            { header: 'Ca Làm Việc', key: 'CaLamViec', width: 15 },
-            { header: 'Ngày Chấm Công', key: 'NgayChamCong', width: 15 },
-            { header: 'Giờ Vào', key: 'GioVao', width: 12 },
-            { header: 'Ngày Vào', key: 'NgayVao', width: 12 },
-            { header: 'Thiết Bị Vào', key: 'DiaDiemVao', width: 20 },
-            { header: 'Giờ Ra', key: 'GioRa', width: 12 },
-            { header: 'Ngày Ra', key: 'NgayRa', width: 12 },
-            { header: 'Thiết Bị Ra', key: 'DiaDiemRa', width: 20 },
-            { header: 'Thời Gian Làm Việc (giờ)', key: 'ThoiGianLamViec', width: 20 },
-            { header: 'Chốt Công', key: 'ChotCong', width: 15 },
-            { header: 'Ghi Chú', key: 'GhiChu', width: 30 }
-        ];
-        
-        // Style header
-        worksheet.getRow(1).font = { bold: true };
-        worksheet.getRow(1).fill = {
-            type: 'pattern',
-            pattern: 'solid',
-            fgColor: { argb: 'FFE0E0E0' }
-        };
-        
-        // Thêm dữ liệu
-        data.forEach(row => {
+        // Nếu là báo cáo theo nhân viên, tạo multiple sheets cho từng ngày
+        if (personId && data.length > 0) {
+            // Nhóm dữ liệu theo ngày
+            const dataByDate = {};
+            data.forEach(row => {
+                const date = row.NgayChamCong ? new Date(row.NgayChamCong).toISOString().split('T')[0] : 'unknown';
+                if (!dataByDate[date]) {
+                    dataByDate[date] = [];
+                }
+                dataByDate[date].push(row);
+            });
+            
+            // Tạo sheet tổng quan
+            const summarySheet = workbook.addWorksheet('Tổng quan');
+            summarySheet.columns = [
+                { header: 'Mã Nhân Viên', key: 'MaNhanVienNoiBo', width: 15 },
+                { header: 'Họ và Tên', key: 'HoTen', width: 25 },
+                { header: 'Phòng Ban', key: 'PhongBan', width: 20 },
+                { header: 'Ca Làm Việc', key: 'CaLamViec', width: 15 },
+                { header: 'Ngày Chấm Công', key: 'NgayChamCong', width: 15 },
+                { header: 'Giờ Vào', key: 'GioVao', width: 12 },
+                { header: 'Ngày Vào', key: 'NgayVao', width: 12 },
+                { header: 'Thiết Bị Vào', key: 'DiaDiemVao', width: 20 },
+                { header: 'Giờ Ra', key: 'GioRa', width: 12 },
+                { header: 'Ngày Ra', key: 'NgayRa', width: 12 },
+                { header: 'Thiết Bị Ra', key: 'DiaDiemRa', width: 20 },
+                { header: 'Thời Gian Làm Việc (giờ)', key: 'ThoiGianLamViec', width: 20 },
+                { header: 'Chốt Công', key: 'ChotCong', width: 15 },
+                { header: 'Ghi Chú', key: 'GhiChu', width: 30 }
+            ];
+            
+            // Style header cho sheet tổng quan
+            summarySheet.getRow(1).font = { bold: true };
+            summarySheet.getRow(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' }
+            };
+            
+            // Thêm dữ liệu vào sheet tổng quan
+            data.forEach(row => {
+                const formatDate = (date) => {
+                    if (!date) return '';
+                    const d = new Date(date);
+                    return d.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                };
+                
+                const formatTime = (date) => {
+                    if (!date) return '';
+                    const d = new Date(date);
+                    const hours = d.getUTCHours();
+                    const minutes = d.getUTCMinutes();
+                    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                };
+
+                // Logic xử lý chốt công và ghi chú với điều kiện ca làm việc
+                let chotCong = '';
+                let ghiChu = '';
+                
+                // Lấy thông tin ca làm việc
+                const caLamViec = row.CaLamViec ? row.CaLamViec.toUpperCase() : '';
+                const ngayChamCong = row.NgayChamCong ? new Date(row.NgayChamCong) : null;
+                const gioRa = row.GioRa ? new Date(row.GioRa) : null;
+                
+                // Kiểm tra điều kiện tiên quyết chốt công
+                let thoaManDieuKienChotCong = false;
+                
+                if (caLamViec && ngayChamCong && gioRa) {
+                    if (['SC', 'HC', 'VHCN'].includes(caLamViec)) {
+                        const ngayChamCongDate = new Date(ngayChamCong);
+                        const ngayRaDate = new Date(gioRa);
+                        
+                        if (ngayRaDate.getDate() > ngayChamCongDate.getDate() || 
+                            ngayRaDate.getMonth() > ngayChamCongDate.getMonth() ||
+                            ngayRaDate.getFullYear() > ngayChamCongDate.getFullYear()) {
+                            thoaManDieuKienChotCong = false;
+                        } else {
+                            const gioChotCong = new Date(ngayChamCong);
+                            gioChotCong.setHours(21, 0, 0, 0);
+                            
+                            if (gioRa <= gioChotCong) {
+                                thoaManDieuKienChotCong = true;
+                            }
+                        }
+                    } else if (caLamViec === 'VHCD') {
+                        const gioChotCong = new Date(ngayChamCong);
+                        gioChotCong.setDate(gioChotCong.getDate() + 1);
+                        gioChotCong.setHours(9, 0, 0, 0);
+                        
+                        if (gioRa <= gioChotCong) {
+                            thoaManDieuKienChotCong = true;
+                        }
+                    }
+                }
+                
+                // Xử lý trạng thái chấm công
+                if (row.TrangThai) {
+                    const trangThai = row.TrangThai.toLowerCase();
+                    if (trangThai === 'đúng giờ' || trangThai.includes('on time') || trangThai.includes('đủ giờ')) {
+                        if (thoaManDieuKienChotCong) {
+                            chotCong = '1';
+                            ghiChu = 'Đúng giờ';
+                        } else {
+                            chotCong = '0';
+                            ghiChu = 'Đúng giờ';
+                        }
+                    } else if (trangThai.includes('muộn') || trangThai.includes('late')) {
+                        chotCong = '0';
+                        ghiChu = 'Đi muộn';
+                    } else if (trangThai.includes('sớm') || trangThai.includes('early')) {
+                        chotCong = '0';
+                        ghiChu = 'Về sớm';
+                    } else if (trangThai.includes('thiếu') || trangThai.includes('không đủ')) {
+                        chotCong = '0';
+                        ghiChu = 'Không đủ giờ';
+                    } else if (trangThai.includes('khong dung gio quy dinh') || trangThai.includes('không đúng giờ quy định')) {
+                        chotCong = '0';
+                        ghiChu = 'Không đúng giờ quy định';
+                    } else {
+                        chotCong = '0';
+                        ghiChu = 'Không đủ giờ';
+                    }
+                } else {
+                    chotCong = '0';
+                    ghiChu = 'Không đủ giờ';
+                }
+                
+                // Thêm lý do cụ thể không chốt công
+                if (!thoaManDieuKienChotCong && caLamViec && ngayChamCong && gioRa) {
+                    const ngayChamCongDate = new Date(ngayChamCong);
+                    const ngayRaDate = new Date(gioRa);
+                    
+                    if (['SC', 'HC', 'VHCN'].includes(caLamViec)) {
+                        if (ngayRaDate.getDate() > ngayChamCongDate.getDate() || 
+                            ngayRaDate.getMonth() > ngayChamCongDate.getMonth() ||
+                            ngayRaDate.getFullYear() > ngayChamCongDate.getFullYear()) {
+                            ghiChu += ' - Làm việc qua ngày hôm sau';
+                        }
+                    } else if (caLamViec === 'VHCD') {
+                        ghiChu += ' - Ra sau 9h sáng hôm sau';
+                    }
+                }
+                
+                // Thêm thông tin ca làm việc vào ghi chú nếu có
+                if (caLamViec) {
+                    ghiChu += ` (Ca: ${caLamViec})`;
+                }
+                
+                summarySheet.addRow({
+                    MaNhanVienNoiBo: row.MaNhanVienNoiBo || '',
+                    HoTen: row.HoTen || '',
+                    PhongBan: row.PhongBan || '',
+                    CaLamViec: row.CaLamViec || 'Chưa xác định',
+                    NgayChamCong: formatDate(row.NgayChamCong),
+                    GioVao: formatTime(row.GioVao),
+                    NgayVao: formatDate(row.NgayVao),
+                    DiaDiemVao: row.DiaDiemVao || '',
+                    GioRa: formatTime(row.GioRa),
+                    NgayRa: formatDate(row.NgayRa),
+                    DiaDiemRa: row.DiaDiemRa || '',
+                    ThoiGianLamViec: row.ThoiGianLamViec ? row.ThoiGianLamViec.toFixed(4) : '',
+                    ChotCong: chotCong,
+                    GhiChu: ghiChu
+                });
+            });
+            
+            // Tạo sheet chi tiết cho từng ngày
+            for (const date of Object.keys(dataByDate).sort()) {
+                const dayData = dataByDate[date];
+                const sheetName = `Ngày ${date}`;
+                const daySheet = workbook.addWorksheet(sheetName);
+                
+                // Định nghĩa columns cho sheet chi tiết
+                daySheet.columns = [
+                    { header: 'Thời Gian', key: 'ThoiGian', width: 15 },
+                    { header: 'Loại Sự Kiện', key: 'LoaiSuKien', width: 15 },
+                    { header: 'Thiết Bị', key: 'ThietBi', width: 20 },
+                    { header: 'Ghi Chú', key: 'GhiChu', width: 30 }
+                ];
+                
+                // Style header cho sheet chi tiết
+                daySheet.getRow(1).font = { bold: true };
+                daySheet.getRow(1).fill = {
+                    type: 'pattern',
+                    pattern: 'solid',
+                    fgColor: { argb: 'FFE0E0E0' }
+                };
+                
+                // Thêm thông tin nhân viên ở đầu sheet
+                const employeeInfo = dayData[0];
+                daySheet.addRow({
+                    ThoiGian: 'Mã NV:',
+                    LoaiSuKien: employeeInfo.MaNhanVienNoiBo,
+                    ThietBi: 'Họ tên:',
+                    GhiChu: employeeInfo.HoTen
+                });
+                daySheet.addRow({
+                    ThoiGian: 'Phòng ban:',
+                    LoaiSuKien: employeeInfo.PhongBan || '',
+                    ThietBi: 'Ca làm việc:',
+                    GhiChu: employeeInfo.CaLamViec || 'Chưa xác định'
+                });
+                daySheet.addRow({
+                    ThoiGian: '',
+                    LoaiSuKien: '',
+                    ThietBi: '',
+                    GhiChu: ''
+                });
+                
+                // Thêm dữ liệu chi tiết từ bảng dulieutho cho ngày này
+                // Tìm kiếm rộng hơn để đảm bảo lấy được dữ liệu thô
+                const detailQuery = `
+                    SELECT 
+                        ts_vn,
+                        event_type,
+                        device_name,
+                        employee_name,
+                        person_id,
+                        employee_code
+                    FROM dulieutho 
+                    WHERE employee_code = '${employeeInfo.MaNhanVienNoiBo}'
+                        AND CAST(ts_vn AS DATE) = '${date}'
+                    ORDER BY ts_vn ASC
+                `;
+                
+                try {
+                    const detailResult = await pool.request().query(detailQuery);
+                    
+                    if (detailResult.recordset.length > 0) {
+                        console.log(`   📊 Tìm thấy ${detailResult.recordset.length} sự kiện chi tiết trong dulieutho cho ngày ${date}`);
+                        
+                        detailResult.recordset.forEach((event, index) => {
+                            const formatTime = (date) => {
+                                if (!date) return '';
+                                const d = new Date(date);
+                                // Trừ đi 7 giờ để hiển thị đúng thời gian thực tế
+                                d.setHours(d.getHours() - 7);
+                                const hours = d.getHours();
+                                const minutes = d.getMinutes();
+                                const seconds = d.getSeconds();
+                                return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                            };
+                            
+                            // Xác định loại sự kiện
+                            let loaiSuKien = '';
+                            if (event.event_type === 'vao') {
+                                loaiSuKien = 'Vào';
+                            } else if (event.event_type === 'ra') {
+                                loaiSuKien = 'Ra';
+                            } else {
+                                loaiSuKien = event.event_type || 'Không xác định';
+                            }
+                            
+                            daySheet.addRow({
+                                ThoiGian: formatTime(event.ts_vn),
+                                LoaiSuKien: loaiSuKien,
+                                ThietBi: event.device_name || '',
+                                GhiChu: ''
+                            });
+                        });
+                    } else {
+                        // Nếu không tìm thấy theo tên cụ thể, thử tìm tất cả nhân viên có nhiều sự kiện trong ngày
+                        const fallbackQuery = `
+                            SELECT 
+                                ts_vn,
+                                event_type,
+                                device_name,
+                                employee_name,
+                                person_id,
+                                employee_code
+                            FROM dulieutho 
+                            WHERE CAST(ts_vn AS DATE) = '${date}'
+                                AND (employee_code = '${employeeInfo.MaNhanVienNoiBo}' OR employee_name LIKE '%${employeeInfo.HoTen}%')
+                                AND employee_name IS NOT NULL
+                                AND employee_name != ''
+                            ORDER BY ts_vn ASC
+                        `;
+                        
+                        const fallbackResult = await pool.request().query(fallbackQuery);
+                        
+                        if (fallbackResult.recordset.length > 0) {
+                            // Ưu tiên tìm theo employee_code trước
+                            let selectedEmployee = null;
+                            
+                            // Tìm theo employee_code chính xác trước
+                            const exactCodeEvents = fallbackResult.recordset.filter(event => 
+                                event.employee_code === employeeInfo.MaNhanVienNoiBo
+                            );
+                            
+                            if (exactCodeEvents.length > 0) {
+                                selectedEmployee = {
+                                    employee_name: exactCodeEvents[0].employee_name,
+                                    person_id: exactCodeEvents[0].person_id,
+                                    employee_code: exactCodeEvents[0].employee_code,
+                                    events: exactCodeEvents
+                                };
+                                console.log(`   ✅ Tìm thấy ${exactCodeEvents.length} sự kiện theo employee_code chính xác`);
+                            } else {
+                                // Nếu không tìm thấy theo employee_code, tìm theo tên chính xác
+                                const exactNameEvents = fallbackResult.recordset.filter(event => 
+                                    event.employee_name === employeeInfo.HoTen
+                                );
+                                
+                                if (exactNameEvents.length > 0) {
+                                    selectedEmployee = {
+                                        employee_name: exactNameEvents[0].employee_name,
+                                        person_id: exactNameEvents[0].person_id,
+                                        employee_code: exactNameEvents[0].employee_code,
+                                        events: exactNameEvents
+                                    };
+                                    console.log(`   ✅ Tìm thấy ${exactNameEvents.length} sự kiện theo tên chính xác`);
+                                } else {
+                                    // Cuối cùng mới fallback theo tên tương tự (nhưng ưu tiên nhân viên có nhiều sự kiện nhất)
+                                    const employeeStats = {};
+                                    fallbackResult.recordset.forEach(event => {
+                                        const key = `${event.employee_name}_${event.person_id}`;
+                                        if (!employeeStats[key]) {
+                                            employeeStats[key] = {
+                                                employee_name: event.employee_name,
+                                                person_id: event.person_id,
+                                                employee_code: event.employee_code,
+                                                events: []
+                                            };
+                                        }
+                                        employeeStats[key].events.push(event);
+                                    });
+                                    
+                                    // Tìm theo tên tương tự (ưu tiên nhân viên có nhiều sự kiện nhất)
+                                    let maxEventsForName = 0;
+                                    Object.values(employeeStats).forEach(emp => {
+                                        if (emp.employee_name && emp.employee_name !== '-' && 
+                                            (emp.employee_name.includes(employeeInfo.HoTen.split(' ')[0]) || 
+                                             emp.employee_name.includes(employeeInfo.HoTen.split(' ')[employeeInfo.HoTen.split(' ').length - 1]))) {
+                                            if (emp.events.length > maxEventsForName) {
+                                                maxEventsForName = emp.events.length;
+                                                selectedEmployee = emp;
+                                            }
+                                        }
+                                    });
+                                    
+                                    // Nếu không tìm thấy theo tên, tìm nhân viên có nhiều sự kiện nhất (loại trừ nhân viên có tên "-")
+                                    if (!selectedEmployee) {
+                                        let maxEvents = 0;
+                                        Object.values(employeeStats).forEach(emp => {
+                                            if (emp.employee_name && emp.employee_name !== '-' && emp.events.length > maxEvents) {
+                                                maxEvents = emp.events.length;
+                                                selectedEmployee = emp;
+                                            }
+                                        });
+                                    }
+                                    
+                                    if (selectedEmployee) {
+                                        console.log(`   ⚠️  Fallback theo tên tương tự: ${selectedEmployee.employee_name} (${selectedEmployee.employee_code}) - ${selectedEmployee.events.length} sự kiện`);
+                                    }
+                                }
+                            }
+                            
+                            if (selectedEmployee && selectedEmployee.events.length > 0) {
+                                console.log(`   📊 Tìm thấy nhân viên ${selectedEmployee.employee_name} có ${selectedEmployee.events.length} sự kiện`);
+                                
+                                selectedEmployee.events.forEach((event, index) => {
+                                    const formatTime = (date) => {
+                                        if (!date) return '';
+                                        const d = new Date(date);
+                                        // Trừ đi 7 giờ để hiển thị đúng thời gian thực tế
+                                        d.setHours(d.getHours() - 7);
+                                        const hours = d.getHours();
+                                        const minutes = d.getMinutes();
+                                        const seconds = d.getSeconds();
+                                        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                                    };
+                                    
+                                    let loaiSuKien = '';
+                                    if (event.event_type === 'vao') {
+                                        loaiSuKien = 'Vào';
+                                    } else if (event.event_type === 'ra') {
+                                        loaiSuKien = 'Ra';
+                                    } else {
+                                        loaiSuKien = event.event_type || 'Không xác định';
+                                    }
+                                    
+                                    daySheet.addRow({
+                                        ThoiGian: formatTime(event.ts_vn),
+                                        LoaiSuKien: loaiSuKien,
+                                        ThietBi: event.device_name || '',
+                                        GhiChu: ''
+                                    });
+                                });
+                            } else {
+                                // Fallback cuối cùng: hiển thị dữ liệu đã xử lý
+                                console.log(`   📋 Không tìm thấy dữ liệu thô phù hợp, sử dụng dữ liệu đã xử lý cho ngày ${date}`);
+                                dayData.forEach(row => {
+                                    const formatTime = (date) => {
+                                        if (!date) return '';
+                                        const d = new Date(date);
+                                        // Trừ đi 7 giờ để hiển thị đúng thời gian thực tế
+                                        d.setHours(d.getHours() - 7);
+                                        const hours = d.getHours();
+                                        const minutes = d.getMinutes();
+                                        return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                                    };
+                                    
+                                    daySheet.addRow({
+                                        ThoiGian: formatTime(row.GioVao),
+                                        LoaiSuKien: 'Vào',
+                                        ThietBi: row.DiaDiemVao || '',
+                                        GhiChu: 'Dữ liệu đã xử lý'
+                                    });
+                                    
+                                    if (row.GioRa) {
+                                        daySheet.addRow({
+                                            ThoiGian: formatTime(row.GioRa),
+                                            LoaiSuKien: 'Ra',
+                                            ThietBi: row.DiaDiemRa || '',
+                                            GhiChu: `Thời gian làm việc: ${row.ThoiGianLamViec ? row.ThoiGianLamViec.toFixed(2) : 0}h`
+                                        });
+                                    }
+                                });
+                            }
+                        } else {
+                            console.log(`   ❌ Không tìm thấy dữ liệu nào cho ngày ${date}`);
+                        }
+                    }
+                } catch (error) {
+                    console.error('Lỗi lấy dữ liệu chi tiết:', error.message);
+                }
+                
+                // Auto-fit columns
+                daySheet.columns.forEach(column => {
+                    column.width = Math.max(column.width || 10, 12);
+                });
+            }
+            
+            // Auto-fit columns cho sheet tổng quan
+            summarySheet.columns.forEach(column => {
+                column.width = Math.max(column.width || 10, 12);
+            });
+            
+        } else {
+            // Báo cáo thông thường (không theo nhân viên)
+            const worksheet = workbook.addWorksheet('Báo cáo chấm công');
+            
+            // Định nghĩa columns
+            worksheet.columns = [
+                { header: 'Mã Nhân Viên', key: 'MaNhanVienNoiBo', width: 15 },
+                { header: 'Họ và Tên', key: 'HoTen', width: 25 },
+                { header: 'Phòng Ban', key: 'PhongBan', width: 20 },
+                { header: 'Ca Làm Việc', key: 'CaLamViec', width: 15 },
+                { header: 'Ngày Chấm Công', key: 'NgayChamCong', width: 15 },
+                { header: 'Giờ Vào', key: 'GioVao', width: 12 },
+                { header: 'Ngày Vào', key: 'NgayVao', width: 12 },
+                { header: 'Thiết Bị Vào', key: 'DiaDiemVao', width: 20 },
+                { header: 'Giờ Ra', key: 'GioRa', width: 12 },
+                { header: 'Ngày Ra', key: 'NgayRa', width: 12 },
+                { header: 'Thiết Bị Ra', key: 'DiaDiemRa', width: 20 },
+                { header: 'Thời Gian Làm Việc (giờ)', key: 'ThoiGianLamViec', width: 20 },
+                { header: 'Chốt Công', key: 'ChotCong', width: 15 },
+                { header: 'Ghi Chú', key: 'GhiChu', width: 30 }
+            ];
+            
+            // Style header
+            worksheet.getRow(1).font = { bold: true };
+            worksheet.getRow(1).fill = {
+                type: 'pattern',
+                pattern: 'solid',
+                fgColor: { argb: 'FFE0E0E0' }
+            };
+            
+            // Thêm dữ liệu cho báo cáo thông thường
+            data.forEach(row => {
             // Xử lý timezone đúng cách
             const formatDate = (date) => {
                 if (!date) return '';
@@ -1432,9 +1953,10 @@ router.get('/export/report', async (req, res) => {
             const formatTime = (date) => {
                 if (!date) return '';
                 const d = new Date(date);
-                // Sử dụng UTC để tránh timezone conversion
-                const hours = d.getUTCHours();
-                const minutes = d.getUTCMinutes();
+                // Trừ đi 7 giờ để hiển thị đúng thời gian thực tế
+                d.setHours(d.getHours() - 7);
+                const hours = d.getHours();
+                const minutes = d.getMinutes();
                 return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
             };
 
@@ -1487,13 +2009,13 @@ router.get('/export/report', async (req, res) => {
             // Xử lý trạng thái chấm công
             if (row.TrangThai) {
                 const trangThai = row.TrangThai.toLowerCase();
-                if (trangThai.includes('đúng giờ') || trangThai.includes('on time') || trangThai.includes('đủ giờ')) {
+                if (trangThai === 'đúng giờ' || trangThai.includes('on time') || trangThai.includes('đủ giờ')) {
                     if (thoaManDieuKienChotCong) {
                         chotCong = '1';
-                        ghiChu = 'Đúng giờ - Đã chốt công';
+                        ghiChu = 'Đúng giờ';
                     } else {
                         chotCong = '0';
-                        ghiChu = 'Đúng giờ - Chưa chốt công';
+                        ghiChu = 'Đúng giờ';
                     }
                 } else if (trangThai.includes('muộn') || trangThai.includes('late')) {
                     chotCong = '0';
@@ -1526,8 +2048,6 @@ router.get('/export/report', async (req, res) => {
                         ngayRaDate.getMonth() > ngayChamCongDate.getMonth() ||
                         ngayRaDate.getFullYear() > ngayChamCongDate.getFullYear()) {
                         ghiChu += ' - Làm việc qua ngày hôm sau';
-                    } else {
-                        ghiChu += ' - Ra sau 21h';
                     }
                 } else if (caLamViec === 'VHCD') {
                     ghiChu += ' - Ra sau 9h sáng hôm sau';
@@ -1543,7 +2063,7 @@ router.get('/export/report', async (req, res) => {
                 MaNhanVienNoiBo: row.MaNhanVienNoiBo || '',
                 HoTen: row.HoTen || '',
                 PhongBan: row.PhongBan || '',
-                CaLamViec: caLamViec || '',
+                CaLamViec: row.CaLamViec || 'Chưa xác định',
                 NgayChamCong: formatDate(row.NgayChamCong),
                 GioVao: formatTime(row.GioVao),
                 NgayVao: formatDate(row.NgayVao),
@@ -1555,12 +2075,13 @@ router.get('/export/report', async (req, res) => {
                 ChotCong: chotCong,
                 GhiChu: ghiChu
             });
-        });
-        
-        // Auto-fit columns
-        worksheet.columns.forEach(column => {
-            column.width = Math.max(column.width || 10, 12);
-        });
+            });
+            
+            // Auto-fit columns cho báo cáo thông thường
+            worksheet.columns.forEach(column => {
+                column.width = Math.max(column.width || 10, 12);
+            });
+        }
         
         // Tạo filename
         const now = new Date();

@@ -449,6 +449,60 @@
             color: white;
         }
 
+        /* Navigation Menu Styles */
+        .nav-menu {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .nav-menu h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+            text-align: center;
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .nav-button {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            text-decoration: none;
+        }
+
+        .nav-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-button.excel {
+            background: linear-gradient(45deg, #27ae60, #2ecc71);
+        }
+
+        .nav-button.excel:hover {
+            box-shadow: 0 15px 40px rgba(39, 174, 96, 0.3);
+        }
+
         @media (max-width: 768px) {
             .container {
                 padding: 10px;
@@ -500,6 +554,17 @@
                 padding: 12px 25px;
                 font-size: 1rem;
             }
+
+            /* Navigation responsive */
+            .nav-buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .nav-button {
+                padding: 12px 25px;
+                font-size: 1rem;
+            }
         }
     </style>
 </head>
@@ -509,8 +574,6 @@
             <h1>🏢 Hanet Dashboard</h1>
             <p>Hệ thống chấm công thông minh - Theo dõi thời gian thực</p>
         </div>
-
-
 
         <!-- Báo cáo chấm công -->
         <div class="report-section">
